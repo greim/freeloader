@@ -1,4 +1,11 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<!--
+this is a really big page cobbled together from the markup of websites of
+several large corporations, ran through html tidy, then obfuscated slightly. it
+serves as a dummy load on which to run behchmarks.
+-->
+
 <html>
 <head>
 <meta name="generator" content="HTML Tidy for Linux/x86 (vers 11 February 2007), see www.w3.org">
@@ -137,7 +144,7 @@ FREELOADER.id('foo').onload(function(){
 	area.value='';
 	window.setInterval(function(){
 		var intv = FREELOADER.benchmarks.pollingIntervalMillis();
-		var avg = FREELOADER.benchmarks.pollingExecutionAverageMillis(); 
+		var avg = FREELOADER.benchmarks.pollingExecutionAverageMillis();
 		area.value = 'interval: '+intv+', average: '+avg+'\n'+area.value;
 	},750);
 });
