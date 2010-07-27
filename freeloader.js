@@ -1,7 +1,7 @@
 /*
-FREELOADER: shirk your page-load responsibilities
-Version: 1.0 pre-alpha
-Copyright: 2010 by Greg Reimer
+FREELOADER: declarative pre-processing and library loading
+Version: 1.0
+Copyright: 2010 by Greg Reimer (http://github.com/greim)
 License: MIT
 */
 
@@ -31,7 +31,7 @@ License: MIT
 			return false;
 		};
 	})();
-	
+
 	// return a random string of hex digits
 	var rand = (function() {
 		var hex = '0123456789abcdef';
@@ -43,7 +43,7 @@ License: MIT
 			return result;
 		};
 	})();
-	
+
 	// functions in queue will run periodically
 	var queue = [];
 
@@ -82,7 +82,7 @@ License: MIT
 			});
 		};
 	})();
-	
+
 	// tracker for classes
 	var trackClassName = (function(){
 		var tracked = [];
@@ -133,7 +133,7 @@ License: MIT
 				cback: cback
 			});
 		};
-	})(); 
+	})();
 
 	// tracker for classes for old browsers
 	var oldTrackClassName = (function(){
@@ -170,7 +170,7 @@ License: MIT
 				cback: cback
 			});
 		};
-	})(); 
+	})();
 
 	// pounce on ids when they occur
 	function onElementLoadById(id, cback){
@@ -200,8 +200,8 @@ License: MIT
 	// start the queue cycling
 	var pause = 50, // pause in milliseconds between cycles
 		counter = 0,
-		average = 0,
-		maxAvg = 5; // avg ms for each cycle (begins estimated as 1)
+		average = 0, // avg ms for each cycle
+		maxAvg = 5;
 	(function(){
 		var start = new Date();
 		if (queue.length) {
@@ -293,7 +293,7 @@ License: MIT
 		return list;
 	}
 
-	// find which js and css files are already on the page	
+	// find which js and css files are already on the page
 	var isLoaded = (function(){
 		var scripts = document.getElementsByTagName('script');
 		var links = document.getElementsByTagName('link');
