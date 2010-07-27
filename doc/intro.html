@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Freeloader - Introduction</title>
+
+<link rel="stylesheet" type="text/css" href="doc.css">
+
+</head>
+<body>
+
+<div id="content">
+
+<h1>Freeloader - Introduction</h1>
+
+<p>
+Freeloader is a small standalone library that does two things:
+</p>
+
+<ol>
+<li>Declarative DOM pre-processing</li>
+<li>Declarative library dependency loading</li>
+</ol>
+
+<h2>Declarative DOM Pre-processing</h2>
+
+<pre>
+// widgetify all foos
+var widgetifyThis = function(){...};
+FREELOADER.id('foo').onload(widgetifyThis);
+</pre>
+
+<p>
+Whenever an element with an id of "foo" appears on the page, freeloader calls a function against that element.
+An element is only pre-processed once.
+Combined with event delegation, a more straightforward web development model is now possible.
+</p>
+
+<pre>
+// declare dom pre-processing
+FREELOADER.id('foo').onload(buildFooWidget);
+FREELOADER.id('bar').onload(buildBarWidget);
+FREELOADER.className('baz').onload(buildBazWidget);
+
+// declare event handlers
+jQuery('#foo').live('click', function(){...});
+jQuery('#bar').live('mouseover', function(){...});
+jQuery('.baz').live('click', function(){...});
+</pre>
+
+<p>
+Contrast this with the standard model, where elements are pre-processed during the onload event.
+With ajax becoming more widespread and widgets being loaded into the page at various times, this do-it-once model needs to be replaced by a more continuous, declarative model.
+</p>
+
+<h2>Declarative Library Dependency Loading</h2>
+
+<p>
+It's rarely the case that you need to load all your code, all the time.
+Freeloader therefore provides an API that allows you to load only what you need, based on the elements that are currently on the page.
+This is done in two steps.
+First, you build a dependency graph of JavaScript and CSS libraries, by URL.
+Once this is done, you tell it which elements require which libraries.
+The first time an instance of that element appears in the dom, the needed libraries are serially loaded, one after the other, in proper order.
+Duplicates and circularities in the dependency graph are handled gracefully.
+</p>
+
+<pre>
+// build library dependency graph
+FREELOADER.lib('my-jquery-plugin.js').requires('jquery.js');
+FREELOADER.lib('my-other-jquery-plugin.js').requires('jquery.js');
+FREELOADER.lib('footer-widget.js').requires('my-other-jquery-plugin.js');
+FREELOADER.lib('menu-widget.js').requires([
+    'my-jquery-plugin.js',
+    'my-other-jquery-plugin.js',
+    'menu-widget.css'
+]);
+
+// declare DOM dependencies
+FREELOADER.id('menu').requires('menu-widget.js');
+FREELOADER.id('footer').requires('footer-widget.js');
+</pre>
+
+<p>
+Freeloader treats all .js extensions as JavaScript libraries, and all .css extensions as CSS libraries.
+If your JS or CSS files have other extensions, you can teach freeloader to recognize them using regular expressions.
+</p>
+
+<pre>
+FREELOADER.patterns.css(/.*\.scss$/); // SASS!
+FREELOADER.patterns.js(/\/js\/bundler.*\.jsp/); // dynamic bundler!
+</pre>
+
+<h2>Full API</h2>
+
+<pre>
+FREELOADER.lib(url)
+    .requires(url); // url can be array
+    .load(callback); // callback optional
+
+FREELOADER.patterns
+    .js(exp); // exp can be array
+    .css(exp); // exp can be array
+
+FREELOADER.id(str)
+    .requires(url, callback); // url can be array, callback optional
+    .onload(process); // 'this' references element
+
+FREELOADER.className(str)
+    .requires(url, callback); // url can be array, callback optional
+    .onload(process); // 'this' references element
+</pre>
+
+<h2>FAQ</h2>
+
+<dl class="faq">
+
+<dt>Is freeloader open source?</dt>
+<dd>
+Yes.
+It's released under the MIT license, so go nuts.
+</dd>
+
+<dt>Does freeloader depend on other libraries?</dt>
+<dd>
+No.
+Freeloader aims to be a small standalone library, without dependencies on other libraries.
+</dd>
+
+<dt>Does freeloader accept CSS selectors?</dt>
+<dd>
+No.
+Freeloader only accepts IDs or classes, and won't recognize selectors like <code>"#foo"</code> or <code>".bar"</code>
+</dd>
+
+<dt>Why doesn't freeloader accept CSS selectors?</dt>
+<dd>
+Freeloader polls the DOM several times per second (see next question).
+Some ways of querying the DOM are faster than others.
+One of the fastest ways is to use <code>getElementById()</code> and <code>getElementsByClassName()</code>, becayse they're natively implemented and use simple search criteria.
+Querying in more complex ways, such as by using CSS selectors, is inherently slower.
+I don't want to add this functionality until I can demonstrate that it performs well in all modern browsers.
+Plus, I want to keep the codebase small and standalone, adding a selector engine would more than double the codebase.
+When <code>querySelectorAll()</code> gains a big enough install base, CSS selectors may become more feasible.
+</dd>
+
+<dt>It queries the DOM multiple times per second? Wat?!?</dt>
+<dd>
+Freeloader operates on the premises that:
+1) calling <code>getElementById()</code> a few tens of times per second will have a negligible performance impact,
+2) calling <code>getElementsByClassName()</code> a few times at the beginning, which returns live lists, and then looping those lists a few tens of times per second, will have a negligible performance impact.
+Initial benchmarks indicate that, in modern browsers, both these premises are true.
+However freeloader benchmarks itself, and throttles back the polling frequency if it begins to absorb too much CPU time.
+</dd>
+
+<dt>How often does it poll the DOM?</dt>
+<dd>
+A 50ms interval is imposed between polls, so if the average poll takes 1ms to execute it ends up being about once every 51ms.
+The interval between polls is increased incrementally if the polling execution time exceeds 10% of the interval time.
+</dd>
+
+<dt>Does freeloader support IE6-8?</dt>
+<dd>
+Yes, freeloader fulfills its contractual obligation on those browsers, but when it gets home it curls into a fetal position in the corner and cries for a few hours.
+Specifically, performance becomes a greater concern on large pages if you use the <code>.className()</code> method, since IE6-8 don't natively implement <code>getElementsByClassName()</code>.
+If freeloader doesn't detect this method, it falls back to slower brute-force style methods.
+</dd>
+<dd>
+Initial benchmarks indicate that on a very large page on IE6 (>2000 nodes), listening for lots of different classes and IDs (>80) will cause freeloader to throttle back to polling once every three or four seconds, spiking the processor between 20-50% for each poll.
+This was on a 2.5GHZ laptop running XP Pro.
+For reference, polls performed in the sub-millisecond range for both Firefox 3.6 and Chrome 5 on the same benchmark test page on the same machine.
+</dd>
+
+<dt>Is freeloader ready for prime-time?</dt>
+<dd>
+Short answer: it works great in modern browsers.
+It works, but can be slow, in IE6 and 7.
+</dd>
+<dd>
+Long answer: freeloader is a science experiment.
+Its purpose is to either prove or disprove the hypothesis that <em>declarative DOM pre-processing can be done performantly, across the most commonly-used browsers</em>.
+There's probably no concise answer to this question, but I suspect that as time passes and IE9 displaces the older IEs, freeloader will be a viable option, if it isn't already.
+It will probably boil down to how much you need to cater to IE 6 and 7 on large pages.
+</dd>
+<dd>
+In any case I encourage people to download freeloader and help test this hypothesis, because I think the benefits of a declarative model are worth pursuing.
+That said, please petition your favorite browser vendor to support XBL, which would obsolete freeloader if it were universally supported.
+</dd>
+
+<dt>How can I help?</dt>
+<dd>
+Bug reports, fixes and improvements are always welcome.
+Also, as I've said, this is sort of an experiment.
+Benchmarks on your project are welcome.
+Freeloader provides tools for this:
+<pre>
+// returns the polling interval freeloader is currently using
+FREELOADER.benchmarks.pollingIntervalMillis();
+
+// returns the average execution time last 5 polls have taken
+// rounded up to nearest millisecond
+FREELOADER.benchmarks.pollingExecutionAverageMillis();
+</pre>
+</dd>
+
+</dl>
+
+</div>
+</body>
+</html>
+
+

@@ -1,0 +1,72 @@
+
+body{
+margin:0;
+padding:0 0 100px;
+}
+
+div#content h1,
+div#content h2,
+div#content h3,
+div#content h4,
+div#content h5,
+div#content h6,
+div#content p,
+div#content ol,
+div#content ul,
+div#content dl,
+div#content pre,
+div#content blockquote{
+margin-top:10px;
+margin-bottom:10px;
+}
+
+div#content{
+font-family:helvetica,arial,sans-serif;
+font-size:13px;
+line-height:1.5;
+background:#eee;
+padding:7px 25px 25px;
+max-width:700px;
+margin:0 auto 20px;
+border:6px solid #bfbfbf;
+border-width:0 7px 7px;
+-moz-border-radius: 0 0 20px 20px;
+-webkit-border-radius: 0 0 20px 20px;
+border-radius: 0 0 20px 20px;
+}
+
+div#content pre,
+div#content code{
+color:#600;
+}
+
+div#content pre{
+margin:20px 0;
+background:#fff;
+padding:10px 13px;
+border:6px solid #bbb;
+-moz-border-radius:8px;
+-webkit-border-radius:8px;
+border-radius:8px;
+-moz-box-shadow:2px 2px 8px rgba(0,0,0,0.1) inset;
+-webkit-box-shadow:2px 2px 8px rgba(0,0,0,0.1) inset;
+box-shadow:2px 2px 8px rgba(0,0,0,0.1) inset;
+text-shadow:1px 1px 1px rgba(0,0,0,0.1);
+}
+
+dl.faq dt,dl.faq dd{
+margin:10px 0;
+}
+
+dl.faq dt{
+font-weight:bold;
+}
+
+dl.faq dd{
+padding:0;
+}
+
+dl.faq dt+dd{
+margin-top:-8px;
+}
+
