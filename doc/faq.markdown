@@ -1,23 +1,20 @@
 # Freeloader - Frequently Asked Questions
 
-Q: Is freeloader open source?
+## Q: Is freeloader open source?
 
 A: Yes. It's released under the MIT license, so go nuts.
 
-
-Q: Does freeloader depend on other libraries?
+## Q: Does freeloader depend on other libraries?
 
 A: No. Freeloader aims to be a small standalone library, without dependencies on
 other libraries.
 
-
-Q: Does freeloader accept CSS selectors?
+## Q: Does freeloader accept CSS selectors?
 
 A: No. Freeloader only accepts IDs or classes, and won't recognize selectors
 like <code>"#foo"</code> or <code>".bar"</code>
 
-
-Q: Why doesn't freeloader accept CSS selectors?
+## Q: Why doesn't freeloader accept CSS selectors?
 
 A: Freeloader polls the DOM several times per second (see next question). Some
 ways of querying the DOM are faster than others. One of the fastest ways is to
@@ -30,8 +27,7 @@ standalone, adding a selector engine would more than double the codebase. When
 <code>querySelectorAll()</code> gains a big enough install base, CSS selectors
 may become more feasible.
 
-
-Q: It queries the DOM multiple times per second? Wat?!?
+## Q: It queries the DOM multiple times per second? Wat?!?
 
 A: Freeloader operates on the premises that: 1) calling
 <code>getElementById()</code> a few tens of times per second will have a
@@ -42,16 +38,14 @@ Initial benchmarks indicate that, in modern browsers, both these premises are
 true. However freeloader benchmarks itself, and throttles back the polling
 frequency if it begins to absorb too much CPU time.
 
-
-Q: How often does it poll the DOM?
+## Q: How often does it poll the DOM?
 
 A: A 50ms interval is imposed between polls, so if the average poll takes 1ms
 to execute it ends up being about once every 51ms. The interval between polls
 is increased incrementally if the polling execution time exceeds 10% of the
 interval time.
 
-
-Q: Does freeloader support IE6-8?
+## Q: Does freeloader support IE6-8?
 
 A: Yes, freeloader fulfills its contractual obligation on those browsers, but
 when it gets home it curls into a fetal position in the corner and cries for a
@@ -67,8 +61,7 @@ between 20-50% for each poll. This was on a 2.5GHZ laptop running XP Pro. For
 reference, polls performed in the sub-millisecond range for both Firefox 3.6 and
 Chrome 5 on the same benchmark test page on the same machine.
 
-
-Q: Is freeloader ready for prime-time?
+## Q: Is freeloader ready for prime-time?
 
 A: Short answer: it works great in modern browsers. It works, but can be slow,
 in IE6 and 7.
@@ -86,8 +79,7 @@ hypothesis, because I think the benefits of a declarative model are worth
 pursuing. That said, please petition your favorite browser vendor to support
 XBL, which would obsolete freeloader if it were universally supported.
 
-
-Q: How can I help?
+## Q: How can I help?
 
 A: Bug reports, fixes and improvements are always welcome. Also, as I've said,
 this is sort of an experiment. Benchmarks on your project are welcome.

@@ -1,82 +1,66 @@
-# Freeloader - Introduction
+# Freeloader - Introduction to the API
 
-Freeloader is a small standalone library intended for:
+Freeloader provides these methods:
 
- 1. Declarative DOM pre-processing
- 2. Declarative library dependency loading
+    FREELOADER.lib(thisUrl).requires(thatUrl);
+    FREELOADER.lib(url).load(callback);
+    FREELOADER.patterns.js(exp);
+    FREELOADER.patterns.css(exp);
+    FREELOADER.id(str).onload(process);
+    FREELOADER.className(str).onload(process);
+    FREELOADER.id(str).requires(url);
+    FREELOADER.className(str).requires(url);
+
+## Building a Library Dependency Graph
+
+    FREELOADER.lib(thisUrl).requires(thatUrl);
+
+Builds a dependency graph of libraries, which are used later on. Doesn't
+actually load any libraries.
+
+<code>thisUrl</code> must be a string. <code>thatUrl</code> must be either a
+string or an array of strings. URLs should point to either CSS or JS files.
+
+## Explicitly Loading a Library
+
+    FREELOADER.lib(url).load(callback);
+
+Loads the library at <code>url</code> onto the page. Any pre-requisite libraries
+(i.e. contained in dependency graph) are loaded onto the page first.
+
+All CSS files are loaded immediately and concurrently. JS files are loaded
+serially to avoid dependency errors. 404 errors won't cause freeloader to stop
+loading remaining files. Libraries are only loaded once, even if they occur
+multiple times in the dependency graph.
+
+<code>callback</code> is optional and doesn't accept parameters, and is executed
+after last JS library has loaded and executed.
+
+## Teaching Freeloader new CSS and JS URL Patterns
+
+    FREELOADER.patterns.js(exp);
+    FREELOADER.patterns.css(exp);
+
+Teaches freeloader to recognize URLs as either CSS or JS. <code>exp</code> must
+be either a regexp or an array of regexps. Out of the box, freeloader will treat
+<code>.css</code> and <code>.js</code> extensions as CSS and JS, respectively.
+Freeloader ignores URLs it doesn't recognize.
 
 ## Declarative DOM Pre-processing
 
-    // widgetify all foos
-    var widgetifyThis = function(){...};
-    FREELOADER.id('foo').onload(widgetifyThis);
+    FREELOADER.id(str).onload(process);
+    FREELOADER.className(str).onload(process);
 
-Whenever an element with an id of "foo" appears on the page, freeloader calls
-the given function against that element. An element is only pre-processed once.
-Combined with event delegation, a more straightforward web development model is
-now possible.
+Pre-processes each new occurrance of an id or class in the DOM, throughout the
+lifetime of the page. When <code>process</code> executes, the <code>this</code>
+object refers to the element.
 
-    // declare dom pre-processing
-    FREELOADER.id('foo').onload(buildFooWidget);
-    FREELOADER.id('bar').onload(buildBarWidget);
-    FREELOADER.className('baz').onload(buildBazWidget);
+## Declarative Library Loading
 
-    // declare event handlers
-    jQuery('#foo').live('click', function(){...});
-    jQuery('#bar').live('mouseover', function(){...});
-    jQuery('.baz').live('click', function(){...});
+    FREELOADER.id(str).requires(url);
+    FREELOADER.className(str).requires(url);
 
-Contrast this with the standard approach, where elements are pre-processed
-during the page load event. With ajax becoming more widespread and widgets
-being loaded into the page at various times, this do-it-once model needs to be
-replaced by a more continuous, declarative model.
-
-## Declarative Library Dependency Loading
-
-It's rarely the case that you need to load all your code, all the time.
-Freeloader therefore provides an API that allows you to load only what you
-need, based on the elements that are currently on the page. This is done in two
-steps. First, you build a dependency graph of JavaScript and CSS libraries, by
-URL. Once this is done, you tell it which elements require which libraries. The
-first time an instance of that element appears in the dom, the needed libraries
-are serially loaded, one after the other, in proper order. Duplicates and
-circularities in the dependency graph are handled gracefully.
-
-    // build library dependency graph
-    FREELOADER.lib('my-jquery-plugin.js').requires('jquery.js');
-    FREELOADER.lib('my-other-jquery-plugin.js').requires('jquery.js');
-    FREELOADER.lib('footer-widget.js').requires('my-other-jquery-plugin.js');
-    FREELOADER.lib('menu-widget.js').requires([
-        'my-jquery-plugin.js',
-        'my-other-jquery-plugin.js',
-        'menu-widget.css'
-    ]);
-
-    // declare DOM dependencies
-    FREELOADER.id('menu').requires('menu-widget.js');
-    FREELOADER.id('footer').requires('footer-widget.js');
-
-Freeloader treats all .js extensions as JavaScript libraries, and all .css
-extensions as CSS libraries. If your JS or CSS files have other extensions, you
-can teach freeloader to recognize them using regular expressions.
-
-    FREELOADER.patterns.css(/.*\.scss$/); // SASS!
-    FREELOADER.patterns.js(/\/js\/bundler.*\.jsp/); // dynamic bundler!
-
-## Full API
-
-    FREELOADER.lib(url)
-        .requires(url); // url can be array
-        .load(callback); // callback optional
-
-    FREELOADER.patterns
-        .js(exp); // exp can be array
-        .css(exp); // exp can be array
-
-    FREELOADER.id(str)
-        .requires(url, callback); // url can be array, callback optional
-        .onload(process); // 'this' references element
-
-    FREELOADER.className(str)
-        .requires(url, callback); // url can be array, callback optional
-        .onload(process); // 'this' references element
+Loads the given library the first time an id or class occurrs in the DOM,
+throughout the lifetime of the page. Loading follows same rules as load method
+described above. <code>url</code> must be either a string or an array of
+strings.
