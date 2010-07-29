@@ -36,7 +36,9 @@ a few times at the beginning, which returns live lists, and then looping those
 lists a few tens of times per second, will have a negligible performance impact.
 Initial benchmarks indicate that, in modern browsers, both these premises are
 true. However freeloader benchmarks itself, and throttles back the polling
-frequency if it begins to absorb too much CPU time.
+frequency if it begins to absorb too much CPU time. If you check out your own
+copy of the project you can open one of the bigger benchmark tests and watch
+this happening in real time.
 
 ## Q: How often does it poll the DOM?
 
@@ -45,50 +47,41 @@ to execute it ends up being about once every 51ms. The interval between polls
 is increased incrementally if the polling execution time exceeds 10% of the
 interval time.
 
-## Q: Does freeloader support IE6-8?
+## Q: Does freeloader support older browsers?
 
-A: Yes, freeloader fulfills its contractual obligation on those browsers, but
-when it gets home it curls into a fetal position in the corner and cries for a
-few hours. Specifically, performance becomes a greater concern on large pages if
-you use the <code>.className()</code> method, since IE6-8 don't natively
-implement <code>getElementsByClassName()</code>. If freeloader doesn't detect
-this method, it falls back to slower brute-force style methods.
+A: Freeloader fulfills its contractual obligation (passes all tests) on browsers
+as far back as IE6 and Mozilla 1.7 (that's *Mozilla*, not Firefox). However when
+it gets home it curls into a fetal position in the corner and cries for a few
+hours. Specifically, performance becomes a greater concern on huge pages if you
+use the <code>.className()</code> method, since
+<code>getElementsByClassName()</code> is a relative newcomer to the game. If
+freeloader doesn't detect this method, it falls back to
+<code>querySelectorAll()</code>, and failing that, to brute-force methods.
 
 Initial benchmarks indicate that on a very large page on IE6 (>2000 nodes),
 listening for lots of different classes and IDs (>80) will cause freeloader to
 throttle back to polling once every three or four seconds, spiking the processor
-between 20-50% for each poll. This was on a 2.5GHZ laptop running XP Pro. For
-reference, polls performed in the sub-millisecond range for both Firefox 3.6 and
-Chrome 5 on the same benchmark test page on the same machine.
+between 20-50% for each query. This was on a 2.5GHZ laptop running XP Pro. YMMV.
 
-## Q: Is freeloader ready for prime-time?
+For comparison, those same queries performed in the sub-millisecond range for
+both Firefox 3.6 and Chrome 5 on the same benchmark test page on the same
+machine.
 
-A: Short answer: it works great in modern browsers. It works, but can be slow,
-in IE6 and 7.
+## Q: Performance-wise, is freeloader ready for prime-time?
+
+A: Short answer: Freeloader floats along with almost no detectable footprint in
+modern browsers. It works, but can be slow, on really big pages in ancient
+browsers. Of particular interest are IE6 and 7, since these browsers are both
+antiquated and common. If you have big pages (I mean *really* big) and you need
+things to snap, crackle and pop on IE6 and 7, (or decrepit versions of Gecko,
+Webkit or Presto) then freeloader isn't for you.
 
 Long answer: freeloader is a science experiment. Its purpose is to either prove
 or disprove the hypothesis that <em>declarative DOM pre-processing can be done
-performantly, across the most commonly-used browsers</em>. There's probably no
-concise answer to this question, but I suspect that as time passes and IE9
-displaces the older IEs, freeloader will be a viable option, if it isn't
-already. It will probably boil down to how much you need to cater to IE 6 and 7
-on large pages.
+performantly, across the most commonly-used browsers</em>. I suspect that as
+time passes and IE9 displaces the older IEs, freeloader will be an increasingly
+viable option, if it isn't already.
 
 In any case I encourage people to download freeloader and help test this
 hypothesis, because I think the benefits of a declarative model are worth
-pursuing. That said, please petition your favorite browser vendor to support
-XBL, which would obsolete freeloader if it were universally supported.
-
-## Q: How can I help?
-
-A: Bug reports, fixes and improvements are always welcome. Also, as I've said,
-this is sort of an experiment. Benchmarks on your project are welcome.
-Freeloader provides tools for this:
-
-    // returns the polling interval freeloader is currently using
-    FREELOADER.benchmarks.pollingIntervalMillis();
-
-    // returns the average execution time last 5 polls have taken
-    // rounded up to nearest millisecond
-    FREELOADER.benchmarks.pollingExecutionAverageMillis();
-
+pursuing.

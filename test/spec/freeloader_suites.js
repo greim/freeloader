@@ -64,7 +64,7 @@
 				expect(ran).toEqual(2);
 			});
 		});
-		it('should load a library upon first instance of an id', function() {	
+		it('should load a library upon first instance of an id', function() {
 			var lib = 'spec/meta.php?s='+encodeURIComponent('var FOO2 = true;');
 			$.id('foo2').requires(lib);
 			var span = document.createElement('span');
@@ -75,7 +75,7 @@
 				expect(FOO2).toEqual(true);
 			});
 		});
-		it('should load a library upon first instance of a class', function() {	
+		it('should load a library upon first instance of a class', function() {
 			var lib = 'spec/meta.php?s='+encodeURIComponent('var FOO3 = true;');
 			$.className('foo3').requires(lib);
 			var span = document.createElement('span');
@@ -87,7 +87,7 @@
 			});
 		});
 		it('should ignore duplicates in the dependency graph', function() {
-			window.X={a:[],b:[],c:[],d:[],e:[],f:[],g:[],h:[]};	
+			window.X={a:[],b:[],c:[],d:[],e:[],f:[],g:[],h:[]};
 			var libA = 'spec/meta.php?s='+encodeURIComponent('X.a.push(true);');
 			var libB = 'spec/meta.php?s='+encodeURIComponent('X.b.push(true);');
 			var libC = 'spec/meta.php?s='+encodeURIComponent('X.c.push(true);');
@@ -109,7 +109,7 @@
 			});
 		});
 		it('should not explode when it encounters circular dependency graphs', function() {
-			window.Y={a:[],b:[],c:[]};	
+			window.Y={a:[],b:[],c:[]};
 			var libA = 'spec/meta.php?s='+encodeURIComponent('Y.a.push(true);');
 			var libB = 'spec/meta.php?s='+encodeURIComponent('Y.b.push(true);');
 			var libC = 'spec/meta.php?s='+encodeURIComponent('Y.c.push(true);');
@@ -150,8 +150,8 @@
 		it('should provide benchmarks', function() {
 			var interval = $.benchmarks.pollingIntervalMillis();
 			var average = $.benchmarks.pollingExecutionAverageMillis();
-			expect(interval).toEqual(50);
-			expect(average).toEqual(1);
+			expect(interval < 250).toEqual(true);
+			expect(average < 25).toEqual(true);
 		});
 	});
 })(FREELOADER);

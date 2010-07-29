@@ -433,7 +433,7 @@ License: MIT
 		version: "1.0 pre-alpha",
 		benchmarks: {
 			pollingIntervalMillis: function(){ return pause; },
-			pollingExecutionAverageMillis: function(){ return Math.ceil(average); }
+			pollingExecutionAverageMillis: function(){ return Math.round(average); }
 		}
 	};
 

@@ -52,7 +52,7 @@ window.onload = function(){
 		window.setInterval(function(){
 			   var intv = FREELOADER.benchmarks.pollingIntervalMillis();
 			   var avg = FREELOADER.benchmarks.pollingExecutionAverageMillis();
-			   area.value = 'Every '+intv+'ms, freeloader takes '+avg+'ms to search '+elementCount+' elements for '+(x*2)+' different classes and ids.\n'+area.value;
+			   area.value = 'After a '+intv+'ms pause, freeloader takes '+avg+'ms to search '+elementCount+' elements for '+(x*2)+' different classes and ids.\n'+area.value;
 		},750);
 	});
 
