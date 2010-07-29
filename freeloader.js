@@ -5,7 +5,7 @@ Copyright: 2010 by Greg Reimer (http://github.com/greim)
 License: MIT
 */
 
-(function(window, document){
+(function(w/*indow*/,d/*ocument*/){
 
 	// ###########################################################################
 	// API TO "POUNCE" ON DOM ELEMENTS AS SOON AS THEY APPEAR
@@ -15,15 +15,15 @@ License: MIT
 	var doneLoading = (function() {
 		var loaded = false,
 			setLoaded = function(){loaded = true;};
-		if (document.addEventListener) {
-			document.addEventListener('load', setLoaded, false);
-			document.addEventListener('DOMContentLoaded', setLoaded, false);
-		} else if (document.attachEvent) {
-			document.attachEvent('onload', setLoaded);
+		if (d.addEventListener) {
+			d.addEventListener('load', setLoaded, false);
+			d.addEventListener('DOMContentLoaded', setLoaded, false);
+		} else if (d.attachEvent) {
+			d.attachEvent('onload', setLoaded);
 		}
 		var rspatt = /^(loaded)|(complete)$/;
 		return function(elmt) {
-			if (loaded || rspatt.test(document.readyState)) { return true; }
+			if (loaded || rspatt.test(d.readyState)) { return true; }
 			while (elmt) {
 				if (elmt.nextSibling) { return true; }
 				elmt = elmt.parentNode;
@@ -68,7 +68,7 @@ License: MIT
 			tracking = true;
 			queue.push(function(){
 				for (var i=0; i<tracked.length; i++) {
-					var elmt = document.getElementById(tracked[i].id);
+					var elmt = d.getElementById(tracked[i].id);
 					process(elmt, tracked[i].utag, tracked[i].cback);
 				}
 			});
@@ -102,7 +102,7 @@ License: MIT
 		return function(cn, utag, cback) {
 			beTracking();
 			tracked.push({
-				list: document.getElementsByClassName(cn),
+				list: d.getElementsByClassName(cn),
 				utag: utag,
 				cback: cback
 			});
@@ -118,7 +118,7 @@ License: MIT
 			tracking = true;
 			queue.push(function(){
 				for (var i=0; i<tracked.length; i++) {
-					var elmts = document.querySelectorAll(tracked[i].selector);
+					var elmts = d.querySelectorAll(tracked[i].selector);
 					for (var j=0; j<elmts.length; j++) {
 						process(elmts[j], tracked[i].utag, tracked[i].cback);
 					}
@@ -137,7 +137,7 @@ License: MIT
 
 	// tracker for classes for old browsers
 	var oldTrackClassName = (function(){
-		if (document.getElementsByClassName) { return false; }
+		if (d.getElementsByClassName) { return; }
 		function crawl(elmt, visit){
 			visit(elmt);
 			for (var i=0; i<elmt.childNodes.length; i++) {
@@ -153,7 +153,7 @@ License: MIT
 			if (tracking) { return; }
 			tracking = true;
 			queue.push(function(){
-				crawl(document.documentElement, function(elmt){
+				crawl(d.documentElement, function(elmt){
 					for (var i=0; i<tracked.length; i++) {
 						if (tracked[i].clPatt.test(elmt.className)) {
 							process(elmt, tracked[i].utag, tracked[i].cback);
@@ -184,10 +184,10 @@ License: MIT
 		return function(clName, cback){
 			if (!clpatt.test(clName)) { throw new Error('invalid className: '+clName); }
 			var utag = clName+'_'+rand();
-			if (document.getElementsByClassName) {
+			if (d.getElementsByClassName) {
 				// modern browsers make our lives easier
 				trackClassName(clName, utag, cback);
-			} else if (document.querySelectorAll) {
+			} else if (d.querySelectorAll) {
 				// IE8 does qsa but not gebcn
 				trackQuerySelector('.'+clName, utag, cback);
 			} else {
@@ -219,7 +219,7 @@ License: MIT
 			//console.log('increasing pause to '+pause);
 		}
 		counter++;
-		window.setTimeout(arguments.callee, pause);
+		w.setTimeout(arguments.callee, pause);
 	})();
 
 	// ###########################################################################
@@ -227,7 +227,7 @@ License: MIT
 
 	// resolve urls using client's native resolver
 	var resolveUrl = (function(){
-		var link = document.createElement('a');
+		var link = d.createElement('a');
 		return function(url) {
 			link.href = url;
 			return link.href;
@@ -295,8 +295,8 @@ License: MIT
 
 	// find which js and css files are already on the page
 	var isLoaded = (function(){
-		var scripts = document.getElementsByTagName('script');
-		var links = document.getElementsByTagName('link');
+		var scripts = d.getElementsByTagName('script');
+		var links = d.getElementsByTagName('link');
 		return function(url) {
 			if (isCss(url)) {
 				for (var i=0; i<links.length; i++) {
@@ -318,7 +318,7 @@ License: MIT
 	// loads a list of js and css files in order
 	// js files are guaranteed to be loaded serially
 	var loadLibs = (function(){
-		var head = document.getElementsByTagName('head')[0];
+		var head = d.getElementsByTagName('head')[0];
 		var rspatt = /^(loaded)|(complete)$/;
 		return function(urls, cback, doneCss) {
 			cback = cback || function(){};
@@ -328,7 +328,7 @@ License: MIT
 				urls = [];
 				for (var i=0; i<allUrls.length; i++) {
 					if (isCss(allUrls[i]) && !isLoaded(allUrls[i])) {
-						var link = document.createElement('link');
+						var link = d.createElement('link');
 						link.rel = 'stylesheet';
 						link.type = 'text/css';
 						link.href = allUrls[i];
@@ -342,7 +342,7 @@ License: MIT
 			if (urls.length) {
 				var url = urls.shift();
 				if (!isLoaded(url)) {
-					var script = document.createElement('script');
+					var script = d.createElement('script');
 					script.src = url;
 					script.type = 'text/javascript';
 					var ran = false;
@@ -365,16 +365,8 @@ License: MIT
 		};
 	})();
 
-	/*
-	FREELOADER.lib(url).requires(url);                 // build a dependency graph
-	FREELOADER.lib(url).load(callback);                // load a lib and its dependencies, exe callback when done
-	FREELOADER.patterns.js(array);                     // urls matching any of these patterns are treated as js
-	FREELOADER.patterns.css(array);                    // urls matching any of these patterns are treated as css
-	FREELOADER.id(str).requires(url, callback);        // load library when first instance of id appears in dom
-	FREELOADER.id(str).onload(setup);                  // run this against every instance of id that occurs in dom
-	FREELOADER.className(str).requires(url, callback); // load library when first instance of class appears in dom
-	FREELOADER.className(str).onload(setup);           // run this against every instance of class that occurs in dom
-	*/
+	// ###########################################################################
+	// BUILD AND EXPOSE LIBRARY
 
 	var FREELOADER = {
 		lib:function(url){
@@ -437,7 +429,7 @@ License: MIT
 		}
 	};
 
-	window.FREELOADER = FREELOADER;
+	w.FREELOADER = FREELOADER;
 
 })(window, document);
 

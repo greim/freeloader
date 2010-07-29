@@ -1,44 +1,57 @@
 # Freeloader
 
-Freeloader is a small, standalone JavaScript library intended for:
+Freeloader is a *listener engine* that responds to changes in the DOM over the
+lifetime of the page. Freeloader neither knows nor cares about the onload and
+DOMContentLoaded events. You simply tell freeloader what elements to listen for,
+and what to do once it finds them, and it will just work. Freeloader can do
+three things:
 
-  1. Declarative DOM pre-processing
-  2. Declarative library dependency loading
+ 1. Build a dependency graph of libraries, so that it knows which libraries to load, in what order.
+ 2. Load a set of required libraries the first time an element with a given class or id appears on the page.
+ 3. Pre-process every element with a given class or id that appears on the page.
 
-## Declarative DOM pre-processing
+## Pre-processing
 
-Some elements need to be wired up—or pre-processed—before they work.
-Typically, we pre-process these elements during the page load event, but
-increasing use of Ajax makes this approach unreliable and complicated.
+Freeloader moves the behavior layer closer to a declarative programming model.
+In CSS, you can declare your widget to have 11px font, and the browser's CSS
+engine takes care of the rest:
 
-Freeloader aims to free us from the tyranny of the page load event and move to a
-more declarative style. It lets you declare which kinds of elements need
-pre-processing, then throughout the lifetime of the page, it will detect
-those elements when they appear and process them.
+    #my-widget { font-size: 11px; }
 
-    // widgetify all foos
-    var widgetifyThis = function(){...};
-    FREELOADER.id('foo').onload(widgetifyThis);
+In the behavior layer, unfortunately there's no way to say:
 
-## Declarative library dependency loading
+    #my-widget { onload: function(){...}; }
 
-It's rarely the case that you need to load all your code, all the time.
-Freeloader uses its built in pre-processing logic to offer a way to conditionally
-load libraries, in order of dependency, based on which elements appear on the 
-page, at any point during the lifetime of the page.
+But freeloader lets you at least *simulate* this idiom:
+
+    FREELOADER.id('my-widget').onload(function(){...});
+
+Subsequently, that function will be called against all instances of elements
+with an id of "my-widget" when they first appear, *regardless of whether the
+page load event has fired*.
+
+## Library loading
+
+To minimize the amount of code you load onto any given page, freeloader lets you
+build a dependency graph of libraries, and then declare which elements require
+those libraries. Freeloader will then load only the required libraries onto the
+page, and only when such an element first appears on the page.
 
     FREELOADER.lib('my-plugin.js').requires('jquery.js');
-    FREELOADER.lib('footer-widget.js').requires('my-plugin.js');
+    FREELOADER.lib('footer-widget.js').requires(['my-plugin.js','footer-widget.css']);
     FREELOADER.id('footer').requires('footer-widget.js');
 
-## Why Freeloader?
+    ...elsewhere...
 
-Freeloader is ideal when:
+    document.body.innerHTML += '<div id="footer">...</div>';
+    // required libraries will now begin loading, serially and in proper order
+
+## You Might Like Freeloader If...
 
  * you don't want to load any more library code than you have to.
  * you have lots of libraries with lots of interdependencies.
  * you need your widgets to just work, whether you add them to the DOM before or after the page load event fires.
  * you need top-notch performance in modern browsers.
  * you need it to work in older versions of IE, but performance isn't top priority.
- * you like the idea of a small, lightweight JavaScript library that focuses on doing a small set of things well.
+ * you like the idea of lightweight JavaScript libraries that focus on doing a few things well.
 
