@@ -50,8 +50,9 @@ page, and only when such an element first appears on the page.
 
  * you don't want to load any more library code than you have to.
  * you have lots of libraries with lots of interdependencies.
- * you need your widgets to just work, whether you add them to the DOM before or after the page load event fires.
- * you need top-notch performance in modern browsers.
- * you need it to work in older versions of IE, but performance isn't top priority.
+ * you need your widgets to work before the page load event fires, without littering the page with script tags.
+ * you need your widgets to work after the page load event fires, even if they get added to the DOM at random times.
+ * you'd really rather just forget about the page load event altogether.
+ * you need top-notch performance in modern browsers, and at least for it to work in older browsers.
  * you like the idea of lightweight JavaScript libraries that focus on doing a few things well.
 
