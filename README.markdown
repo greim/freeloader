@@ -3,8 +3,8 @@
 Freeloader is a *listener engine* that responds to changes in the DOM over the
 lifetime of the page. Freeloader neither knows nor cares about the onload and
 DOMContentLoaded events. You simply tell freeloader what elements to listen for,
-and what to do once it finds them, and it will just work. Freeloader can do
-three things:
+and what to do once it finds them, and it just works. Freeloader can do three
+things:
 
  1. Build a dependency graph of libraries, so that it knows which libraries to load, in what order.
  2. Load a set of required libraries the first time an element with a given class or id appears on the page.
@@ -18,11 +18,11 @@ engine takes care of the rest:
 
     #my-widget { font-size: 11px; }
 
-In the behavior layer, unfortunately there's no way to say:
+In the behavior layer, unfortunately there's no corresponding way to say:
 
     #my-widget { onload: function(){...}; }
 
-But freeloader lets you at least *simulate* this idiom:
+But freeloader lets you at least *simulate* the idiom:
 
     FREELOADER.id('my-widget').onload(function(){...});
 
