@@ -1,6 +1,6 @@
 # Freeloader - Introduction to the API
 
-Freeloader provides these methods:
+Freeloader provides these methods, which are described in further detail below.
 
     FREELOADER.lib(thisUrl).requires(thatUrl);
     FREELOADER.lib(url).load(callback);
@@ -16,7 +16,7 @@ Freeloader provides these methods:
     FREELOADER.lib(thisUrl).requires(thatUrl);
 
 Builds a dependency graph of libraries, which are used later on. Doesn't
-actually load any libraries.
+actually load any libraries at the time it's called.
 
 <code>thisUrl</code> must be a string. <code>thatUrl</code> must be either a
 string or an array of strings. URLs should point to either CSS or JS files.

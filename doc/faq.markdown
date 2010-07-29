@@ -11,10 +11,10 @@ other libraries.
 
 ## Q: Does freeloader accept CSS selectors?
 
-A: No. Freeloader only accepts IDs or classes, and won't recognize selectors
-like <code>"#foo"</code> or <code>".bar"</code>
+A: No. For various reasons, freeloader only accepts IDs or classes, and won't
+recognize selectors like <code>"#foo"</code> or <code>".bar"</code>
 
-## Q: Why doesn't freeloader accept CSS selectors?
+## Q: Wait, why doesn't freeloader accept CSS selectors?
 
 A: Freeloader polls the DOM several times per second (see next question). Some
 ways of querying the DOM are faster than others. One of the fastest ways is to
@@ -27,7 +27,7 @@ standalone, adding a selector engine would more than double the codebase. When
 <code>querySelectorAll()</code> gains a big enough install base, CSS selectors
 may become more feasible.
 
-## Q: It queries the DOM multiple times per second? Wat?!?
+## Q: It queries the DOM multiple times per second?
 
 A: Freeloader operates on the premises that: 1) calling
 <code>getElementById()</code> a few tens of times per second will have a
