@@ -27,8 +27,7 @@ standalone. Adding a selector engine would more than double the codebase. When
 <code>querySelectorAll()</code> gains a big enough install base, CSS selectors
 may become more feasible.
 
-## Q: Is calling getElementsByClassName() several times per second going to slow
-things down, despite being a native function?
+## Q: Is calling getElementsByClassName() several times per second going to slow things down, despite being a native function?
 
 Possibly, however freeloader doesn't actually call it multiple times per second.
 It only calls it once for each className you declare, storing the returned list
