@@ -280,6 +280,12 @@ License: MIT
 	// first entry of list should be loaded first, etc.
 	function getReqs(url, list, decirc){
 		list = list || [];
+		if (url instanceof Array) {
+			while (url.length) {
+				getReqs(url.shift(), list);
+			}
+			return list;
+		}
 		decirc = decirc || {};
 		decirc[url] = true;
 		if (reqs.hasOwnProperty(url)) {
@@ -402,8 +408,7 @@ License: MIT
 					onElementLoadById(id,function(){
 						if (done) { return; }
 						done = true;
-						var reqs = getReqs(u);
-						loadLibs(reqs, cback);
+						loadLibs(getReqs(u), cback);
 					});
 				}
 			};
@@ -416,8 +421,7 @@ License: MIT
 					onElementLoadByClass(c,function(){
 						if (done) { return; }
 						done = true;
-						var reqs = getReqs(u);
-						loadLibs(reqs, cback);
+						loadLibs(getReqs(u), cback);
 					});
 				}
 			};
