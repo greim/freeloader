@@ -6,7 +6,7 @@ listen for, and what to do once it finds them, and it just works. Freeloader
 does two things:
 
  2. Loads a set of required libraries the first time an element with a given class or id appears on the page.
- 3. Pre-process every element with a given class or id that appears on the page.
+ 3. Pre-processes every element with a given class or id that appears on the page.
 
 ## Pre-processing
 
