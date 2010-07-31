@@ -5,26 +5,19 @@ DOM over the lifetime of the page. You simply tell freeloader what elements to
 listen for, and what to do once it finds them, and it just works. Freeloader
 does two things:
 
+ 1. Pre-processes every element with a given class or id that appears on the page.
  2. Loads a set of required libraries the first time an element with a given class or id appears on the page.
- 3. Pre-processes every element with a given class or id that appears on the page.
+
+Freeloader follows a declarative programming idiom, in that you declare which
+libraries you want loaded and which elements you want processed, and it takes
+care of the implementation details of making it happen.
 
 ## Pre-processing
 
-Freeloader moves the behavior layer closer to a declarative programming model.
-In CSS, you can declare your widget to have 11px font, and the browser's CSS
-engine takes care of the rest:
+    function setupMyWidget(){...}
+    FREELOADER.id('my-widget').onload(setupMyWidget);
 
-    #my-widget { font-size: 11px; }
-
-In the behavior layer, unfortunately there's no corresponding way to say:
-
-    #my-widget { onload: function(){...}; }
-
-But freeloader lets you at least *simulate* the idiom:
-
-    FREELOADER.id('my-widget').onload(function(){...});
-
-Subsequently, that function will be called against all instances of elements
+Subsequently, setupMyWidget() will be called against all instances of elements
 with an id of "my-widget" when they first appear, *regardless of whether the
 page load event has fired*.
 
@@ -41,9 +34,7 @@ But say you want to drop new content onto the page using ajax, which may or may
 not contain instances of this widget. Now in your script logic you need to worry
 about if/when the widget will appear after the page load event fires. Freeloader
 lets you forget about the page load event altogether and simply pre-process
-elements as they get introduced to the DOM. This is a declarative programming
-idiom in the sense that you declare your intentions, and freeloader takes care
-of the rest.
+elements as they get introduced to the DOM.
 
 ## Library loading
 
@@ -58,5 +49,5 @@ page, and only when such an element first appears on the page.
 
     ...elsewhere...
 
-    document.body.innerHTML += '<div id="footer">...</div>';
+    jQuery(document.body).append('<div id="footer">...</div>');
     // required libraries will now begin loading, serially and in proper order
