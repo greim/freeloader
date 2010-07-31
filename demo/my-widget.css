@@ -1,0 +1,23 @@
+.widget{
+font-family:sans-serif;
+width:120px;
+height:70px;
+display:inline-block;
+margin:20px 20px 0 0;
+padding-top:50px;
+background:#cdc;
+border:10px solid rgba(0,0,0,0.2);
+-moz-border-radius:20px;
+-webkit-border-radius:20px;
+border-radius:20px;
+vertical-align:middle;
+-moz-box-shadow:5px 5px 10px rgba(0,0,0,0.1);
+-webkit-box-shadow:5px 5px 10px rgba(0,0,0,0.1);
+box-shadow:5px 5px 10px rgba(0,0,0,0.1);
+text-align:center;
+}
+
+.widget.loading{
+background:#ccc;
+color:rgba(0,0,0,0.3);
+}

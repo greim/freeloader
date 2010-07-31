@@ -1,0 +1,37 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en-us" xml:lang="en-us" >
+<head>
+<title>Freeloader Demo</title>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<script src="../freeloader.js" type="text/javascript"></script>
+<script src="jquery.js" type="text/javascript"></script>
+<script type="text/javascript">
+FREELOADER.lib('my-widget.js').requires('jquery.js');
+FREELOADER.className('widget').requires(['my-widget.js','my-widget.css']);
+
+jQuery('a.add-widget').live('click', function(){
+	jQuery(document.body).append('<div class="widget loading">loading...</div>');
+	return false;
+});
+
+</script>
+<style type="text/css">
+body{
+font-family:sans-serif;
+margin:0;
+padding:20px 30px;
+}
+h1,h2,h3,h4,h5,h6,p,ol,ul,dl,pre,blockquote{
+margin-top:10px;
+margin-bottom:10px;
+}
+</style>
+</head>
+<body>
+
+<h1>Fun With Widgets</h1>
+
+<p><a href="#" onclick="addWidget();return false;" class="add-widget">click to add a widget</a></p>
+
+</body>
+</html>

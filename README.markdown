@@ -1,13 +1,11 @@
 # Freeloader
 
-Freeloader is a *listener engine* that responds to changes in the DOM over the
-lifetime of the page. Freeloader neither knows nor cares about the onload and
-DOMContentLoaded events. You simply tell freeloader what elements to listen for,
-and what to do once it finds them, and it just works. Freeloader can do three
-things:
+Freeloader is a lightweight *listener engine* that responds to changes in the
+DOM over the lifetime of the page. You simply tell freeloader what elements to
+listen for, and what to do once it finds them, and it just works. Freeloader
+does two things:
 
- 1. Build a dependency graph of libraries, so that it knows which libraries to load, in what order.
- 2. Load a set of required libraries the first time an element with a given class or id appears on the page.
+ 2. Loads a set of required libraries the first time an element with a given class or id appears on the page.
  3. Pre-process every element with a given class or id that appears on the page.
 
 ## Pre-processing
@@ -30,6 +28,23 @@ Subsequently, that function will be called against all instances of elements
 with an id of "my-widget" when they first appear, *regardless of whether the
 page load event has fired*.
 
+This addresses a common problem in JavaScript development. Suppose you have a
+widget that gets served as part of the page source, that needs to be "wired up"
+in order to function. The wiring happens at page load time, like this:
+
+    function setupMyWidget(){...}
+    jQuery(document).ready(function(){
+        jQuery('#my-widget').each(setupMyWidget);
+    });
+
+But say you want to drop new content onto the page using ajax, which may or may
+not contain instances of this widget. Now in your script logic you need to worry
+about if/when the widget will appear after the page load event fires. Freeloader
+lets you forget about the page load event altogether and simply pre-process
+elements as they get introduced to the DOM. This is a declarative programming
+idiom in the sense that you declare your intentions, and freeloader takes care
+of the rest.
+
 ## Library loading
 
 To minimize the amount of code you load onto any given page, freeloader lets you
@@ -45,14 +60,3 @@ page, and only when such an element first appears on the page.
 
     document.body.innerHTML += '<div id="footer">...</div>';
     // required libraries will now begin loading, serially and in proper order
-
-## You Might Like Freeloader If...
-
- * you don't want to load any more library code than you have to.
- * you have lots of libraries with lots of interdependencies.
- * you need your widgets to work before the page load event fires, without littering the page with script tags.
- * you need your widgets to work after the page load event fires, even if they get added to the DOM at random times.
- * you'd really rather just forget about the page load event altogether.
- * you need top-notch performance in modern browsers, and at least for it to work in older browsers.
- * you like the idea of lightweight JavaScript libraries that focus on doing a few things well.
-
