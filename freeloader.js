@@ -33,7 +33,7 @@ License: MIT
 	})();
 
 	// return a random string of hex digits
-	var rand = (function() {
+	var getUtag = (function() {
 		var hex = '0123456789abcdef';
 		return function() {
 			var result = '';
@@ -44,8 +44,14 @@ License: MIT
 		};
 	})();
 
-	// functions in queue will run periodically
-	var queue = [];
+	// has class name?
+	var hasClass = (function(){
+		var patts={};// cache compiled classname regexps
+		return function(el, cName) {
+			if (!patts[cName]) { patts[cName] = new RegExp("(^|\\s)"+cName+"($|\\s)"); }
+			return el.className && patts[cName].test(el.className);
+		};
+	})();
 
 	// helper function to save typing
 	function process(elmt, utag, cback) {
@@ -53,11 +59,15 @@ License: MIT
 			elmt
 			&& doneLoading(elmt)
 			&& !elmt[utag]
+			&& !hasClass(elmt,utag)
 		) {
 			elmt[utag] = true;
-			cback.call(elmt);
+			cback.call(elmt, utag);
 		}
 	}
+
+	// functions in queue will run periodically
+	var queue = [];
 
 	// tracker for ids
 	var trackId = (function(){
@@ -184,7 +194,7 @@ License: MIT
 
 	// pounce on ids when they occur
 	function onElementLoadById(id, cback){
-		var utag = id+'_'+rand();
+		var utag = getUtag();
 		trackId(id, utag, cback);
 	}
 
@@ -193,7 +203,7 @@ License: MIT
 		var clpatt = /^[0-9a-z_-]+$/i;
 		return function(clName, cback){
 			if (!clpatt.test(clName)) { throw new Error('invalid className: '+clName); }
-			var utag = clName+'_'+rand();
+			var utag = getUtag();
 			if (d.getElementsByClassName) {
 				// modern browsers make our lives easier
 				trackClassName(clName, utag, cback);
