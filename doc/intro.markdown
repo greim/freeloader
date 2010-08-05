@@ -46,6 +46,12 @@ be either a regexp or an array of regexps. Out of the box, freeloader will treat
 <code>.css</code> and <code>.js</code> extensions as CSS and JS, respectively.
 Freeloader ignores URLs it doesn't recognize.
 
+For example, if you have a PHP script that returns content type
+<code>text/css</code>, called <code>styles.php</code>, freeloader won't load it
+onto the page unless you do this first:
+
+    FREELOADER.patterns.css(/\/styles\.php$/);
+
 ## Declarative DOM Pre-processing
 
     FREELOADER.id(str).onload(process);

@@ -66,10 +66,20 @@ License: MIT
 		function beTracking() {
 			if (tracking) { return; }
 			tracking = true;
+			var stack = [];
 			queue.push(function(){
 				for (var i=0; i<tracked.length; i++) {
-					var elmt = d.getElementById(tracked[i].id);
-					process(elmt, tracked[i].utag, tracked[i].cback);
+					// does doing this have adverse effects? would it be better
+					// to assume/enforce only one element of a given id on a page?
+					var elmt;
+					while (elmt = d.getElementById(tracked[i].id)) {
+						process(elmt, tracked[i].utag, tracked[i].cback);
+						elmt.id='';
+						stack.push(elmt);
+					}
+					while (stack.length) {
+						stack.pop().id = tracked[i].id;
+					}
 				}
 			});
 		}
@@ -426,7 +436,6 @@ License: MIT
 				}
 			};
 		},
-		version: "1.0 pre-alpha",
 		benchmarks: {
 			pollingIntervalMillis: function(){ return pause; },
 			pollingExecutionAverageMillis: function(){ return Math.round(average); }
