@@ -76,19 +76,11 @@ License: MIT
 		function beTracking() {
 			if (tracking) { return; }
 			tracking = true;
-			var stack = [];
 			queue.push(function(){
 				for (var i=0; i<tracked.length; i++) {
-					// does doing this have adverse effects? would it be better
-					// to assume/enforce only one element of a given id on a page?
 					var elmt;
-					while (elmt = d.getElementById(tracked[i].id)) {
+					if (elmt = d.getElementById(tracked[i].id)) {
 						process(elmt, tracked[i].utag, tracked[i].cback);
-						elmt.id='';
-						stack.push(elmt);
-					}
-					while (stack.length) {
-						stack.pop().id = tracked[i].id;
 					}
 				}
 			});
