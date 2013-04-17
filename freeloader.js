@@ -219,48 +219,6 @@ THE SOFTWARE.
         /**
          * This creates a specification for a DOM element.
          * Its single argument is a specification object.
-         * Usage:
-         * 
-         *     freeloader.spec({
-         *         classNameKey:  <string>   // We're specifying behavior on dom elements having this class name.
-         *         validate:      <function> // (optional) Return a string if DOM subtree invalid, else false.
-         *         init:          <function> // (optional) Run when element first appears in the DOM.
-         *         events:        <object>   // Events to delegate on this element.
-         *         subscriptions: <object>   // Subscribe to certain global events.
-         *         methods:       <object>   // Functions referenced above.
-         *     });
-         * 
-         * Note the use of 'classNameKey'. A className is
-         * required specifically because of the fact that
-         * Node.getElementsByClassName() returns a live
-         * list. Thus, freeloader specs are keyed by
-         * className, as opposed to arbitrary selectors or
-         * data attributes for example. Queries for those
-         * things, for example lists returned by jQuery()
-         * or Node.querySelectorAll(), aren't live lists.
-         * 
-         * Events objects work like this:
-         * 
-         *     events: {
-         *         'eventType selector': 'methodName' // delegate in the instance element for eventType to selector
-         *         'eventType': 'methodName'          // listen for eventType directly on instance element
-         *     }                                      // in both cases, methods.methodName() is called
-         * 
-         * Subscriptions objects work like this:
-         * 
-         *     subscriptions: {
-         *         'type': 'methodName' // call methods.methodName(args) when somebody calls freeloader.message('type', args)
-         *     }
-         * 
-         * Note that in all functions shown, 'this' will
-         * be the instance element, not wrapped in jQuery.
-         * Also, the instance element has a run() method that
-         * accepts a string and executes one of the given
-         * methods. Example:
-         * 
-         *     init: function(){
-         *         this.run('adjustFit');
-         *     }
          */
         _freeloader.spec = function(spec){
 
@@ -376,34 +334,3 @@ THE SOFTWARE.
         return _freeloader;
     });
 })(window);
-
-/**
- * GLOSSARY:
- * =======================================================
- * spec
- * 
- *     A declarative specification for how certain DOM
- *     elements should behave, what events they handle, etc.
- * 
- * instance element
- * 
- *     A DOM element that has been detected by freeloader
- *     and is now controled by a spec. Note that in freeloader
- *     there's no concept of a separate view instance. The
- *     element itself is the instance.
- * 
- * IIFE
- * 
- *     Immediately-Invoked Function Expression. Defensive
- *     JS programming technique useful for encapsulation of
- *     variables.
- * 
- * live node list
- * 
- *     A node list returned by a native DOM method, where
- *     the browser manages the contents of the list to
- *     reflect only elements currently in the DOM.
- */
-
-
-
