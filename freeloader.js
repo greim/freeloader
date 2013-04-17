@@ -1,450 +1,409 @@
 /*
-FREELOADER: declarative pre-processing and library loading
-Version: 1.0
-Copyright: 2010 by Greg Reimer (http://github.com/greim)
-License: MIT
+Copyright (c) 2013 Greg Reimer
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
 */
 
-(function(w/*indow*/,d/*ocument*/){
+(function(window){
 
-	// ###########################################################################
-	// API TO "POUNCE" ON DOM ELEMENTS AS SOON AS THEY APPEAR
+    /*
+     * If AMD is available, use it, otherwise make freeloader a
+     * global variable. This library only runs in browsers,
+     * so don't worry about CommonJS.
+     */
+    var isAmd = typeof window.define === "function" && window.define.amd;
+    var define = isAmd ? window.define : function(list, cb){
+        window.freeloader = cb(jQuery);
+    };
 
-	// determine if element is done being parsed into dom
-	// avoids a race condition
-	var doneLoading = (function() {
-		var loaded = false,
-			setLoaded = function(){loaded = true;};
-		if (d.addEventListener) {
-			d.addEventListener('load', setLoaded, false);
-			d.addEventListener('DOMContentLoaded', setLoaded, false);
-		} else if (d.attachEvent) {
-			d.attachEvent('onload', setLoaded);
-		}
-		var rspatt = /^(loaded)|(complete)$/;
-		return function(elmt) {
-			if (loaded || rspatt.test(d.readyState)) { return true; }
-			while (elmt) {
-				if (elmt.nextSibling) { return true; }
-				elmt = elmt.parentNode;
-			}
-			return false;
-		};
-	})();
+    /*
+     * This lib depends heavily on jQuery. Namespace is
+     * thus ensured in this function context. By convention,
+     * variables local to this define callback are prepended
+     * by _underscores.
+     */
+    define(['jquery'], function($){
 
-	// return a random string of hex digits
-	var getUtag = (function() {
-		var hex = '0123456789abcdef';
-		return function() {
-			var result = '';
-			for (var i=0; i<8; i++) {
-				result += hex.charAt(Math.floor(Math.random() * hex.length));
-			}
-			return result;
-		};
-	})();
+        /*
+         * Keep a copy of the slice method around for use on
+         * arguments objects, rather than creating and throwing
+         * away an array each time that needs to be done.
+         */
+        var _slice = [].slice;
 
-	// has class name?
-	var hasClass = (function(){
-		var patts={};// cache compiled classname regexps
-		return function(el, cName) {
-			if (!patts[cName]) { patts[cName] = new RegExp("(^|\\s)"+cName+"($|\\s)"); }
-			return el.className && patts[cName].test(el.className);
-		};
-	})();
+        /*
+         * This is the list of specifications that freeloader
+         * manages. This list is local to freeloader's IIFE
+         * and not visible to the rest of the world.
+         */
+        var _specs = {};
 
-	// helper function to save typing
-	function process(elmt, utag, cback) {
-		if (
-			elmt
-			&& doneLoading(elmt)
-			&& !elmt[utag]
-			&& !hasClass(elmt,utag)
-		) {
-			elmt[utag] = true;
-			cback.call(elmt, utag);
-		}
-	}
+        /*
+         * DOM elements that freeloader have already seen are
+         * tagged with this, so that freeloader knows not to
+         * touch them again. When new HTML is injected onto
+         * the page, those elements won't have this tag, and
+         * thus freeloader will operate on them.
+         */
+        var _tag = '__spec';
 
-	// functions in queue will run periodically
-	var queue = [];
+        /*
+         * A key feature of freeloader is that it operates on
+         * stored live node lists. This is what gives freeloader
+         * the ability to inexpensively audit the current state
+         * of the DOM. This function initializes, stores and
+         * returns such lists.
+         */
+        var _byClass = (function(){
+            var lists = {};
+            return function(className){
+                var list = lists[className];
+                if (!list) {
+                    list = lists[className] = document.getElementsByClassName(className);
+                }
+                return list;
+            };
+        })();
 
-	// tracker for ids
-	var trackId = (function(){
-		var tracked = [];
-		var tracking = false;
-		function beTracking() {
-			if (tracking) { return; }
-			tracking = true;
-			queue.push(function(){
-				for (var i=0; i<tracked.length; i++) {
-					var elmt;
-					if (elmt = d.getElementById(tracked[i].id)) {
-						process(elmt, tracked[i].utag, tracked[i].cback);
-					}
-				}
-			});
-		}
-		return function(id, utag, cback) {
-			beTracking();
-			tracked.push({
-				id: id,
-				utag: utag,
-				cback: cback
-			});
-		};
-	})();
+        /*
+         * This function scans the DOM for elements that should
+         * be controlled by a freeloader spec. It also has an
+         * optional callback, so that a custom action can be
+         * applied to an instance element. This callback enables
+         * freeloader's messaging mechanism.
+         */
+        function _scan(cb){
+            for (var classNameKey in specs){
+                if (!specs.hasOwnProperty(classNameKey)) {
+                    continue;
+                }
+                var spec = _specs[classNameKey];
+                var list = _byClass(spec.classNameKey);
+                for (var i=0, len=list.length; i<len; i++){
+                    var el = list[i];
+                    if (el[_tag] === undefined){
+                        el[_tag] = spec;
+                        _load(spec, el);
+                    }
+                    cb && cb(el);
+                }
+            }
+        }
 
-	// tracker for classes
-	var trackClassName = (function(){
-		var tracked = [];
-		var tracking = false;
-		function beTracking() {
-			if (tracking) { return; }
-			tracking = true;
-			queue.push(function(){
-				for (var i=0; i<tracked.length; i++) {
-					for (var j=0; j<tracked[i].list.length; j++) {
-						var elmt = tracked[i].list[j];
-						process(elmt, tracked[i].utag, tracked[i].cback);
-					}
-				}
-			});
-		}
-		return function(cn, utag, cback) {
-			beTracking();
-			tracked.push({
-				list: d.getElementsByClassName(cn),
-				utag: utag,
-				cback: cback
-			});
-		};
-	})();
+        /*
+         * This IIFE and async recursion does the periodic
+         * scanning for new elements. Since it's asynchronous
+         * recursion, there's no eventual stack overflow. Note
+         * that the scanning isn't a DOM query, but rather just
+         * a loop through a pre-existing list of elements.
+         */
+        (function loopCheck(){
+            _scan();
+            setTimeout(loopCheck,200);
+        })();
 
-	// tracker for CSS query selectors
-	var trackQuerySelector = (function(){
-		var tracked = [];
-		var tracking = false;
-		function beTracking() {
-			if (tracking) { return; }
-			tracking = true;
-			queue.push(function(){
-				for (var i=0; i<tracked.length; i++) {
-					var elmts = d.querySelectorAll(tracked[i].selector);
-					for (var j=0; j<elmts.length; j++) {
-						process(elmts[j], tracked[i].utag, tracked[i].cback);
-					}
-				}
-			});
-		}
-		return function(sel, utag, cback) {
-			beTracking();
-			tracked.push({
-				selector: sel,
-				utag: utag,
-				cback: cback
-			});
-		};
-	})();
+        /*
+         * Provides a fail-safe for console errors. Some
+         * browsers don't expose a console object except when
+         * the dev tools are open. This avoids runtime errors
+         * in such cases.
+         */
+        function _consoleError(err) {
+            if (window.console && typeof console.error === 'function') {
+                console.error(err);
+            }
+        }
 
-	// tracker for classes for old browsers
-	var oldTrackClassName = (function(){
-		if (d.getElementsByClassName) { return; }
-		function crawl(elmt, visit){
-			visit(elmt);
-			for (var i=0; i<elmt.childNodes.length; i++) {
-				var child = elmt.childNodes[i];
-				if (child.nodeType === 1) {
-					crawl(child, visit);
-				}
-			}
-		}
-		var tracked = [];
-		var tracking = false;
-		function beTracking() {
-			if (tracking) { return; }
-			tracking = true;
-			queue.push(function(){
-				crawl(d.documentElement, function(elmt){
-					for (var i=0; i<tracked.length; i++) {
-						if (tracked[i].clPatt.test(elmt.className)) {
-							process(elmt, tracked[i].utag, tracked[i].cback);
-						}
-					}
-				});
-			});
-		}
-		return function(clName, utag, cback) {
-			beTracking();
-			tracked.push({
-				clPatt: new RegExp("(^|\\s)"+clName+"($|\\s)"),
-				utag: utag,
-				cback: cback
-			});
-		};
-	})();
+        /*
+         * Utility to iterate through the names and values of
+         * objects. Accepts undefined objects in which case it
+         * returns immediately.
+         */
+        function _iterateObj(obj, cb){
+            if (!_obj) {
+                return;
+            }
+            for (var name in obj) {
+                if (!obj.hasOwnProperty(name)){
+                    continue;
+                }
+                cb(name, obj[name]);
+            }
+        }
 
-	// pounce on ids when they occur
-	function onElementLoadById(id, cback){
-		var utag = getUtag();
-		trackId(id, utag, cback);
-	}
+        /*
+         * Does the basic setup for init, validate and event
+         * handlers on an instance element, based on a given
+         * spec.
+         */
+        function _load(spec, el){
+            var $el = $(el);
 
-	// pounce on classes when they occur
-	var onElementLoadByClass = (function(){
-		var clpatt = /^[0-9a-z_-]+$/i;
-		return function(clName, cback){
-			if (!clpatt.test(clName)) { throw new Error('invalid className: '+clName); }
-			var utag = getUtag();
-			if (d.getElementsByClassName) {
-				// modern browsers make our lives easier
-				trackClassName(clName, utag, cback);
-			} else if (d.querySelectorAll) {
-				// IE8 does qsa but not gebcn
-				trackQuerySelector('.'+clName, utag, cback);
-			} else {
-				// old browsers make our lives more difficult
-				oldTrackClassName(clName, utag, cback);
-			}
-		};
-	})();
+            /**
+             * This is a way to run spec methods directly from
+             * init or validate. Context is preserved.
+             */
+            el.run = function(methodName){
+                var args = _slice.call(arguments);
+                args.shift();
+                spec.methods[methodName].apply(el, args);
+            };
 
-	// start the queue cycling
-	var pause = 50, // pause in milliseconds between cycles
-		counter = 0,
-		average = 0, // avg ms for each cycle
-		maxAvg = 5;
-	(function(){
-		var start = new Date();
-		if (queue.length) {
-			var f = queue.shift();
-			f();
-			queue.push(f);
-		}
-		// if this soaks up more than 10% of cpu cycles, throttle it back
-		var end = new Date();
-		var time = end.getTime() - start.getTime();
-		var num = Math.min(maxAvg, counter);
-		average = ((average * num) + time) / (num+1);
-		if (counter > maxAvg && average / pause > 0.1) {
-			pause = Math.round(pause * 1.1);
-			//console.log('increasing pause to '+pause);
-		}
-		counter++;
-		w.setTimeout(arguments.callee, pause);
-	})();
+            /*
+             * If the spec finds the instance element to be
+             * invalid, log an error, but attempt to continue.
+             */
+            if (spec.validate) {
+                var error = spec.validate.call(el);
+                if (error) {
+                    _consoleError(error);
+                }
+            }
 
-	// ###########################################################################
-	// API TO LOAD LIBRARIES IN ORDER OF DEPENDENCY
+            /*
+             * Initialize the instance element!
+             */
+            if (spec.init) {
+                spec.init.call(el);
+            }
 
-	// resolve urls using client's native resolver
-	var resolveUrl = (function(){
-		var link = d.createElement('a');
-		return function(url) {
-			link.href = url;
-			return link.href;
-		};
-	})();
+            /*
+             * Wire up events on the instance element.
+             */
+            _iterateObj(spec.events, function(key, actions){
+                var matches = key.match(/^\s*(\S+)(\s+(.+))?$/i);
+                if (!matches) {
+                    throw new Error('malformed event string: '+key);
+                }
+                var eventType = matches[1];
+                var selector = matches[3];
+                var handler = function(){
+                    for (var i=0, len=actions.length; i<len; i++){
+                        spec.methods[actions[i]].call(el, arguments);
+                    }
+                };
+                if (selector) {
+                    // use delegation
+                    $el.on(eventType, selector, handler);
+                } else {
+                    // don't use delegation
+                    $el.on(eventType, handler);
+                }
+            });
+        }
 
-	// do two urls, once resolved, match?
-	function urlMatches(a,b){
-		return resolveUrl(a) === resolveUrl(b);
-	}
+        /*
+         * This is the object to be exported. It's called
+         * "freeloader" in the same spirit as REST and lazy
+         * programming, which are useful techniques that are
+         * supposed to save you a lot of work.
+         */
+        var _freeloader = {};
 
-	// gets just the filename extension of a url
-	function getExt(url) {
-		return url.replace(/.*?(\.[a-z]+)?([?#].*)?$/,'$1');
-	}
+        /**
+         * This creates a specification for a DOM element.
+         * Its single argument is a specification object.
+         * Usage:
+         * 
+         *     freeloader.spec({
+         *         classNameKey:  <string>   // We're specifying behavior on dom elements having this class name.
+         *         validate:      <function> // (optional) Return a string if DOM subtree invalid, else false.
+         *         init:          <function> // (optional) Run when element first appears in the DOM.
+         *         events:        <object>   // Events to delegate on this element.
+         *         subscriptions: <object>   // Subscribe to certain global events.
+         *         methods:       <object>   // Functions referenced above.
+         *     });
+         * 
+         * Note the use of 'classNameKey'. A className is
+         * required specifically because of the fact that
+         * Node.getElementsByClassName() returns a live
+         * list. Thus, freeloader specs are keyed by
+         * className, as opposed to arbitrary selectors or
+         * data attributes for example. Queries for those
+         * things, for example lists returned by jQuery()
+         * or Node.querySelectorAll(), aren't live lists.
+         * 
+         * Events objects work like this:
+         * 
+         *     events: {
+         *         'eventType selector': 'methodName' // delegate in the instance element for eventType to selector
+         *         'eventType': 'methodName'          // listen for eventType directly on instance element
+         *     }                                      // in both cases, methods.methodName() is called
+         * 
+         * Subscriptions objects work like this:
+         * 
+         *     subscriptions: {
+         *         'type': 'methodName' // call methods.methodName(args) when somebody calls freeloader.message('type', args)
+         *     }
+         * 
+         * Note that in all functions shown, 'this' will
+         * be the instance element, not wrapped in jQuery.
+         * Also, the instance element has a run() method that
+         * accepts a string and executes one of the given
+         * methods. Example:
+         * 
+         *     init: function(){
+         *         this.run('adjustFit');
+         *     }
+         */
+        _freeloader.spec = function(spec){
 
-	// determine if a url points to js or css file
-	var jsPatts = [];
-	var cssPatts = [];
-	function isJs(url) {
-		for (var i=0; i<jsPatts.length; i++) {
-			if (jsPatts[i].test(url)) { return true; }
-		}
-		return getExt(url) === '.js';
-	}
-	function isCss(url) {
-		for (var i=0; i<cssPatts.length; i++) {
-			if (cssPatts[i].test(url)) { return true; }
-		}
-		return getExt(url) === '.css';
-	}
+            /*
+             * This is the only required thing. Verify
+             * that it exists.
+             */
+            if (!spec.classNameKey){
+                throw new Error('missing classNameKey');
+            }
 
-	// req[url] = arrayOfPrerequisiteUrls
-	var reqs = {};
+            /*
+             * Need to "arrayify" events and subscriptions
+             * in order to support merging.
+             */
+            _iterateObj(spec.events, function(key, actions){
+                if (!$.isArray(actions)) {
+                    spec.events[key] = [actions];
+                }
+            });
+            _iterateObj(spec.subscriptions, function(name, actions){
+                if (!$.isArray(actions)) {
+                    spec.subscriptions[name] = [actions];
+                }
+            });
 
-	// declare a url (js or css) to depend on another list of urls
-	function declareReqs(/*requir*/er, /*requir*/ees){
-		if (!(ees instanceof Array)) {
-			ees = [ees];
-		}
-		if (!reqs.hasOwnProperty(er)) {
-			reqs[er] = [];
-		}
-		for (var i=0; i<ees.length; i++) {
-			reqs[er].push(ees[i]);
-		}
-	}
+            /*
+             * Now determine whether to add or merge the spec.
+             */
+            if (_specs.hasOwnProperty(spec.classNameKey)) {
 
-	// get a list of urls that are required for a given one
-	// first entry of list should be loaded first, etc.
-	function getReqs(url, list, decirc){
-		list = list || [];
-		if (url instanceof Array) {
-			while (url.length) {
-				getReqs(url.shift(), list);
-			}
-			return list;
-		}
-		decirc = decirc || {};
-		decirc[url] = true;
-		if (reqs.hasOwnProperty(url)) {
-			for (var i=0; i<reqs[url].length; i++) {
-				var u = reqs[url][i];
-				if (decirc.hasOwnProperty(u)) { continue; }
-				getReqs(u, list, decirc);
-			}
-		}
-		list.push(url);
-		return list;
-	}
+                /*
+                 * Duplicate specs are merged. The new one is
+                 * merged into the original one and the new one
+                 * is discarded.
+                 */
+                var orig = _specs[spec.classNameKey];
 
-	// find which js and css files are already on the page
-	var isLoaded = (function(){
-		var scripts = d.getElementsByTagName('script');
-		var links = d.getElementsByTagName('link');
-		return function(url) {
-			if (isCss(url)) {
-				for (var i=0; i<links.length; i++) {
-					if (links[i].rel === 'stylesheet' && links[i].href) {
-						if (urlMatches(url, links[i].href)) { return true; }
-					}
-				}
-			} else if (isJs(url)) {
-				for (var i=0; i<scripts.length; i++) {
-					if (scripts[i].src) {
-						if (urlMatches(url, scripts[i].src)) { return true; }
-					}
-				}
-			}
-			return false;
-		};
-	})();
+                /*
+                 * Functions are combined, with original
+                 * function being called first.
+                 */
+                orig.validate = _combineFuncs(orig.validate, spec.validate);
+                orig.init = _combineFuncs(orig.init, spec.init);
+                _iterateObj(spec.methods, function(name, specFn){
+                    orig.methods[name] = _combineFuncs(orig.methods[name], specFn);
+                });
 
-	// loads a list of js and css files in order
-	// js files are guaranteed to be loaded serially
-	var loadLibs = (function(){
-		var head = d.getElementsByTagName('head')[0];
-		var rspatt = /^(loaded)|(complete)$/;
-		return function(urls, cback, doneCss) {
-			cback = cback || function(){};
-			// do all css files up front
-			if (!doneCss) {
-				var allUrls = urls;
-				urls = [];
-				for (var i=0; i<allUrls.length; i++) {
-					if (isCss(allUrls[i]) && !isLoaded(allUrls[i])) {
-						var link = d.createElement('link');
-						link.rel = 'stylesheet';
-						link.type = 'text/css';
-						link.href = allUrls[i];
-						head.appendChild(link);
-					} else if (isJs(allUrls[i])) {
-						urls.push(allUrls[i]);
-					}
-				}
-			}
-			// recursively load scripts
-			if (urls.length) {
-				var url = urls.shift();
-				if (!isLoaded(url)) {
-					var script = d.createElement('script');
-					script.src = url;
-					script.type = 'text/javascript';
-					var ran = false;
-					var loadNext = function(){
-						if (ran) { return; }
-						ran = true;
-						loadLibs(urls, cback, true);
-					};
-					script.onload = script.onerror = loadNext;
-					script.onreadystatechange = function(){
-						if (rspatt.test(script.readyState)) { loadNext(); }
-					};
-					head.appendChild(script);
-				} else {
-					loadLibs(urls, cback, true);
-				}
-			} else {
-				cback();
-			}
-		};
-	})();
+                /*
+                 * Action lists are concatenated, with original
+                 * actions being first in the resulting list.
+                 */
+                _iterateObj(spec.events, function(key, actions){
+                    var oe = orig.events;
+                    oe[key] = oe[key] ? oe[key].push.apply(oe[key], actions) : actions;
+                });
+                _iterateObj(spec.subscriptions, function(name, actions){
+                    var os = orig.subscriptions;
+                    os[name] = os[name] ? os[name].push.apply(os[name], actions) : actions;
+                });
+            } else {
 
-	// ###########################################################################
-	// BUILD AND EXPOSE LIBRARY
+                /*
+                 * Non-dupe specs are simply added.
+                 */
+                _specs[spec.classNameKey] = $.extend({
+                    events: {},
+                    subscriptions: {},
+                    methods: {}
+                }, spec);
+            }
+        };
 
-	var FREELOADER = {
-		lib:function(url){
-			return {
-				requires: function(urls){
-					declareReqs(url, urls);
-				},
-				load: function(cback){
-					var reqs = getReqs(url);
-					loadLibs(reqs, cback);
-				}
-			};
-		},
-		patterns:{
-			js:function(patts) {
-				if (!(patts instanceof Array)) { patts = [patts]; }
-				for (var i=0; i<patts.length; i++) {
-					jsPatts.push(patts[i]);
-				}
-			},
-			css:function(patts) {
-				if (!(patts instanceof Array)) { patts = [patts]; }
-				for (var i=0; i<patts.length; i++) {
-					cssPatts.push(patts[i]);
-				}
-			}
-		},
-		id:function(id){
-			return {
-				onload:function(f){onElementLoadById(id,f);},
-				requires:function(u, cback){
-					var done = false;
-					onElementLoadById(id,function(){
-						if (done) { return; }
-						done = true;
-						loadLibs(getReqs(u), cback);
-					});
-				}
-			};
-		},
-		className:function(c){
-			return {
-				onload:function(f){onElementLoadByClass(c,f);},
-				requires:function(u, cback){
-					var done = false;
-					onElementLoadByClass(c,function(){
-						if (done) { return; }
-						done = true;
-						loadLibs(getReqs(u), cback);
-					});
-				}
-			};
-		},
-		benchmarks: {
-			pollingIntervalMillis: function(){ return pause; },
-			pollingExecutionAverageMillis: function(){ return Math.round(average); }
-		}
-	};
+        /*
+         * Function-merge utility. Accepts two functions,
+         * either of which can be undefined. If both are
+         * defined, returns a function which calls the
+         * first then the second with the same context
+         * and args. If one is defined, returns that one
+         * directly. If neither is defined, returns
+         * undefined.
+         */
+        function _combineFuncs(f1, f2){
+            if (f1 && f2) {
+                return function(){
+                    f1.apply(this, arguments);
+                    f2.apply(this, arguments);
+                };
+            } else {
+                return f1 || f2;
+            }
+        }
 
-	w.FREELOADER = FREELOADER;
+        /**
+         * Send a notification to any instance elements that
+         * happen to be listening. Accepts a type string and
+         * an optional args object.
+         */
+        _freeloader.message = function(name, args){
+            _scan(function(el){
+                var subs = el[_tag].subscriptions;
+                if (subs.hasOwnProperty(name)) {
+                    for (var i=0, len=subs[name].length; i<len; i++){
+                        el.run(subs[name][i], args);
+                    }
+                }
+            });
+        };
 
-})(window, document);
+        /*
+         * Return from the define() call.
+         */
+        return _freeloader;
+    });
+})(window);
+
+/**
+ * GLOSSARY:
+ * =======================================================
+ * spec
+ * 
+ *     A declarative specification for how certain DOM
+ *     elements should behave, what events they handle, etc.
+ * 
+ * instance element
+ * 
+ *     A DOM element that has been detected by freeloader
+ *     and is now controled by a spec. Note that in freeloader
+ *     there's no concept of a separate view instance. The
+ *     element itself is the instance.
+ * 
+ * IIFE
+ * 
+ *     Immediately-Invoked Function Expression. Defensive
+ *     JS programming technique useful for encapsulation of
+ *     variables.
+ * 
+ * live node list
+ * 
+ *     A node list returned by a native DOM method, where
+ *     the browser manages the contents of the list to
+ *     reflect only elements currently in the DOM.
+ */
+
+
 
