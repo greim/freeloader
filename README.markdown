@@ -2,40 +2,63 @@
 
 Declarative behavior binding for browser DOM, plus message-based communication for loose coupling goodness. AMD-compatible. Declare your specs, then inject HTML all over the place. Or just let it operate on what got served. Requires jQuery.
 
-## Usage `freeloader.spec()`
+## Usage `freeloader.spec(className, specification)`
 
-    freeloader.spec({
-        classNameKey:  <string>   // Specify behavior on dom elements having this class name.
-        validate:      <function> // (optional) Return a string if DOM subtree invalid, else false.
-        init:          <function> // (optional) Run when element first appears in the DOM.
-        events:        <object>   // Events to delegate on this element.
-        subscriptions: <object>   // Subscribe to certain global events.
-        functions:     <object>   // Functions referenced above.
+This method binds a DOM className to a specification. The specification controls the behavior of elements having that className.
+
+    // Bind a behavior specification to DOM elements having class 'someclass'.
+    freeloader.bind('someclass', {
+        init:          <function> // (optional) Run when element first appears in the DOM and is bound.
+        events:        <object>   // (optional) Events to delegate on this element.
+        subscriptions: <object>   // (optional) Subscribe to messages that are sent to freeloader.
+        myProperty1:   <anything>
+        myProperty2:   <anything>
+        ...
     });
 
-Note the name `classNameKey`. A className is required specifically because of the fact that `getElementsByClassName()` returns a live list, giving us native list-management for free. Thus, freeloader specs are keyed by `className`, as opposed to arbitrary selectors or values stored in data attributes for example. Queries for those things, for example lists returned by `jQuery()` or `querySelectorAll()`, aren't live lists. 
+Note: classNames are used specifically because of the fact that `getElementsByClassName()` returns a live list, giving us native list-management for free.
 
 Events objects work like this:
 
     events: {
-        'eventType selector': 'functionName' // delegate eventType on the instance element for selector
-        'eventType': 'functionName'          // listen for eventType directly on instance element
-    }                                        // in both cases, functions.functionName() is called
+        'eventType selector': 'methodName' // delegate eventType on the instance element for selector
+        'eventType': 'methodName'          // listen for eventType directly on instance element
+    }                                      // in both cases, this.methodName() is called.
 
 Subscriptions objects work like this:
 
     subscriptions: {
-        'type': 'functionName' // call functions.functionName(args) when somebody calls freeloader.message('type', args)
+        'type': 'methodName' // call this.methodName() when somebody calls freeloader.send('type')
     }
 
-Note that in all functions shown, `this` is the instance element, not wrapped in jQuery. Example: 
+Note that in all functions shown, `this` is a specification instance. Example: 
+
+    foo: function(){ ... },
+    init: function(){
+        this.foo();
+    },
+
+## Usage `freeloader.send(messageType, ...)`
+
+If you subscribed to global events from your `init()` method, for example, you'd be creating references back from an instance to the global object, preventing garbage collection in your app. Not only that, but unless you remember to write some event management biolerplate each time you do this, those events keep firing on your instance long after it has been removed from the DOM. It's a double-hit to performance.
 
     init: function(){
-        this.run('adjustFit');
+        $(window).on('resize', function(){ ...do stuff... });
+        // now global scope has a reference to this object. No GC!
+        // this event will fire forever, even after this element is gone
     }
 
-## Usage `freeloader.message()`
+Instead, freeloader provides a means of loosely-coupled, top-down messaging. 
 
-    freeloader.message(type, args)
+    subscriptions: {
+        'resize': 'adjustFit'
+    },
+    adjustFit: function(){ ...do stuff... }
 
-Args is optional, and can be anything, but is intended to be a named-parameter argument. Calling this method notifies any instance elements that are subscribed to messages of type `type`.
+...meanwhile...
+
+    $(window).on('resize', function(){
+        freeloader.send('resize');
+    });
+    // all interested parties will now be notified
+
