@@ -10,7 +10,7 @@ Declarative behavior binding for browser DOM, plus message-based communication f
         init:          <function> // (optional) Run when element first appears in the DOM.
         events:        <object>   // Events to delegate on this element.
         subscriptions: <object>   // Subscribe to certain global events.
-        methods:       <object>   // Functions referenced above.
+        functions:     <object>   // Functions referenced above.
     });
 
 Note the name `classNameKey`. A className is required specifically because of the fact that `getElementsByClassName()` returns a live list, giving us native list-management for free. Thus, freeloader specs are keyed by `className`, as opposed to arbitrary selectors or values stored in data attributes for example. Queries for those things, for example lists returned by `jQuery()` or `querySelectorAll()`, aren't live lists. 
@@ -18,17 +18,17 @@ Note the name `classNameKey`. A className is required specifically because of th
 Events objects work like this:
 
     events: {
-        'eventType selector': 'methodName' // delegate eventType on the instance element for selector
-        'eventType': 'methodName'          // listen for eventType directly on instance element
-    }                                      // in both cases, methods.methodName() is called
+        'eventType selector': 'functionName' // delegate eventType on the instance element for selector
+        'eventType': 'functionName'          // listen for eventType directly on instance element
+    }                                        // in both cases, functions.functionName() is called
 
 Subscriptions objects work like this:
 
     subscriptions: {
-        'type': 'methodName' // call methods.methodName(args) when somebody calls freeloader.message('type', args)
+        'type': 'functionName' // call functions.functionName(args) when somebody calls freeloader.message('type', args)
     }
 
-Note that in all functions shown, `this` is the instance element, not wrapped in jQuery. Also, the instance element has a run() method that accepts a string and executes one of the given methods. Example: 
+Note that in all functions shown, `this` is the instance element, not wrapped in jQuery. Example: 
 
     init: function(){
         this.run('adjustFit');

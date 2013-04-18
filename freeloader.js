@@ -52,7 +52,18 @@ THE SOFTWARE.
          * manages. This list is local to freeloader's IIFE
          * and not visible to the rest of the world.
          */
-        var _specs = {};
+        var _specs = [];
+
+        /*
+         * Utility to generate unique strings for use only
+         * within this IIFE in order to uniquely identify specs.
+         */
+        var uString = (function(){
+            var count = 0;
+            return function(){
+                return '_' + count++;
+            };
+        })();
 
         /*
          * DOM elements that freeloader have already seen are
@@ -61,7 +72,91 @@ THE SOFTWARE.
          * the page, those elements won't have this tag, and
          * thus freeloader will operate on them.
          */
-        var _tag = '__spec';
+        var _tag = '__spec' + uString();
+
+        /*
+         * Does the basic setup for init, validate and event
+         * handlers on an instance element, based on a given
+         * spec. Constructor function. Relationships between
+         * specs and instance elements are many-to-many.
+         * There is one of these instances for each mapping
+         * between a spec and an instance element.
+         */
+        function Mapping(spec, el){
+
+            /*
+             * This supports freeloader's messaging API.
+             */
+            this.message = function(name, args){
+                if (spec.subscriptions.hasOwnProperty(name)) {
+                    spec.functions[name].call(args, tools);
+                }
+            };
+
+            /*
+             * Spec functions don't have direct access to
+             * themselves. Instead, this "tools" utility is
+             * passed to them as the last parameter, which
+             * they can use to call other functions indirectly.
+             */
+            var tools = this.tools = {
+                run: function(name){
+                    var args = _slice.call(arguments);
+                    args.shift();
+                    args.push(tools);
+                    spec.functions[name].apply(el, args);
+                },
+                bind: function(name, ctx){
+                    ctx = ctx || el;
+                    return function(){
+                        var args = _slice.call(arguments);
+                        args.push(tools);
+                        spec.functions[name].apply(ctx, args);
+                    };
+                }
+            };
+
+            /*
+             * If the spec finds the instance element to be
+             * invalid, log an error, but attempt to continue.
+             */
+            if (spec.validate) {
+                var error = spec.validate.call(el, tools);
+                if (error) {
+                    _consoleError(error);
+                }
+            }
+
+            /*
+             * Initialize the instance element!
+             */
+            if (spec.init) {
+                spec.init.call(el, tools);
+            }
+
+            /*
+             * Wire up events on the instance element.
+             */
+            var $el = $(el);
+            _iterateObj(spec.events, function(key, action){
+                var matches = key.match(/^\s*(\S+)(\s+(.+))?$/i);
+                if (!matches) {
+                    throw new Error('malformed event string: '+key);
+                }
+                var eventType = matches[1];
+                var selector = matches[3];
+                var handler = function(ev){
+                    spec.functions[action].call(el, ev, tools);
+                };
+                if (selector) {
+                    // use delegation
+                    $el.on(eventType, selector, handler);
+                } else {
+                    // don't use delegation
+                    $el.on(eventType, handler);
+                }
+            });
+        }
 
         /*
          * A key feature of freeloader is that it operates on
@@ -89,17 +184,16 @@ THE SOFTWARE.
          * freeloader's messaging mechanism.
          */
         function _scan(cb){
-            for (var classNameKey in specs){
-                if (!specs.hasOwnProperty(classNameKey)) {
-                    continue;
-                }
-                var spec = _specs[classNameKey];
+            for (var i=0, len=_specs.length; i<len; i++){
+                var spec = _specs[i];
                 var list = _byClass(spec.classNameKey);
-                for (var i=0, len=list.length; i<len; i++){
-                    var el = list[i];
+                for (var j=0, len=list.length; j<len; j++){
+                    var el = list[j];
                     if (el[_tag] === undefined){
-                        el[_tag] = spec;
-                        _load(spec, el);
+                        var tag = el[_tag] = {};
+                    }
+                    if (!el[_tag].hasOwnProperty(spec.id)){
+                        el[_tag][spec.id] = new Mapping(spec, el);
                     }
                     cb && cb(el);
                 }
@@ -148,67 +242,6 @@ THE SOFTWARE.
         }
 
         /*
-         * Does the basic setup for init, validate and event
-         * handlers on an instance element, based on a given
-         * spec.
-         */
-        function _load(spec, el){
-            var $el = $(el);
-
-            /**
-             * This is a way to run spec methods directly from
-             * init or validate. Context is preserved.
-             */
-            el.run = function(methodName){
-                var args = _slice.call(arguments);
-                args.shift();
-                spec.methods[methodName].apply(el, args);
-            };
-
-            /*
-             * If the spec finds the instance element to be
-             * invalid, log an error, but attempt to continue.
-             */
-            if (spec.validate) {
-                var error = spec.validate.call(el);
-                if (error) {
-                    _consoleError(error);
-                }
-            }
-
-            /*
-             * Initialize the instance element!
-             */
-            if (spec.init) {
-                spec.init.call(el);
-            }
-
-            /*
-             * Wire up events on the instance element.
-             */
-            _iterateObj(spec.events, function(key, actions){
-                var matches = key.match(/^\s*(\S+)(\s+(.+))?$/i);
-                if (!matches) {
-                    throw new Error('malformed event string: '+key);
-                }
-                var eventType = matches[1];
-                var selector = matches[3];
-                var handler = function(){
-                    for (var i=0, len=actions.length; i<len; i++){
-                        spec.methods[actions[i]].call(el, arguments);
-                    }
-                };
-                if (selector) {
-                    // use delegation
-                    $el.on(eventType, selector, handler);
-                } else {
-                    // don't use delegation
-                    $el.on(eventType, handler);
-                }
-            });
-        }
-
-        /*
          * This is the object to be exported. It's called
          * "freeloader" in the same spirit as REST and lazy
          * programming, which are useful techniques that are
@@ -231,86 +264,16 @@ THE SOFTWARE.
             }
 
             /*
-             * Need to "arrayify" events and subscriptions
-             * in order to support merging.
+             * Add it to the list.
              */
-            _iterateObj(spec.events, function(key, actions){
-                if (!$.isArray(actions)) {
-                    spec.events[key] = [actions];
-                }
-            });
-            _iterateObj(spec.subscriptions, function(name, actions){
-                if (!$.isArray(actions)) {
-                    spec.subscriptions[name] = [actions];
-                }
-            });
-
-            /*
-             * Now determine whether to add or merge the spec.
-             */
-            if (_specs.hasOwnProperty(spec.classNameKey)) {
-
-                /*
-                 * Duplicate specs are merged. The new one is
-                 * merged into the original one and the new one
-                 * is discarded.
-                 */
-                var orig = _specs[spec.classNameKey];
-
-                /*
-                 * Functions are combined, with original
-                 * function being called first.
-                 */
-                orig.validate = _combineFuncs(orig.validate, spec.validate);
-                orig.init = _combineFuncs(orig.init, spec.init);
-                _iterateObj(spec.methods, function(name, specFn){
-                    orig.methods[name] = _combineFuncs(orig.methods[name], specFn);
-                });
-
-                /*
-                 * Action lists are concatenated, with original
-                 * actions being first in the resulting list.
-                 */
-                _iterateObj(spec.events, function(key, actions){
-                    var oe = orig.events;
-                    oe[key] = oe[key] ? oe[key].push.apply(oe[key], actions) : actions;
-                });
-                _iterateObj(spec.subscriptions, function(name, actions){
-                    var os = orig.subscriptions;
-                    os[name] = os[name] ? os[name].push.apply(os[name], actions) : actions;
-                });
-            } else {
-
-                /*
-                 * Non-dupe specs are simply added.
-                 */
-                _specs[spec.classNameKey] = $.extend({
-                    events: {},
-                    subscriptions: {},
-                    methods: {}
-                }, spec);
-            }
+            spec = $.extend({
+                events: {},
+                subscriptions: {},
+                functions: {}
+            }, spec);
+            spec.id = uString();
+            _specs.push(spec);
         };
-
-        /*
-         * Function-merge utility. Accepts two functions,
-         * either of which can be undefined. If both are
-         * defined, returns a function which calls the
-         * first then the second with the same context
-         * and args. If one is defined, returns that one
-         * directly. If neither is defined, returns
-         * undefined.
-         */
-        function _combineFuncs(f1, f2){
-            if (f1 && f2) {
-                return function(){
-                    f1.apply(this, arguments);
-                    f2.apply(this, arguments);
-                };
-            } else {
-                return f1 || f2;
-            }
-        }
 
         /**
          * Send a notification to any instance elements that
@@ -319,12 +282,9 @@ THE SOFTWARE.
          */
         _freeloader.message = function(name, args){
             _scan(function(el){
-                var subs = el[_tag].subscriptions;
-                if (subs.hasOwnProperty(name)) {
-                    for (var i=0, len=subs[name].length; i<len; i++){
-                        el.run(subs[name][i], args);
-                    }
-                }
+                _iterateObj(el[_tag], function(id, mapping){
+                    mapping.message(name, args);
+                });
             });
         };
 
