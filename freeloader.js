@@ -212,7 +212,7 @@ THE SOFTWARE.
             send: function(name){
                 if (this.subscriptions[name]) {
                     var args = _slice.call(arguments, 1);
-                    this[name].apply(this, args);
+                    this[this.subscriptions[name]].apply(this, args);
                 }
             },
 

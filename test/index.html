@@ -9,18 +9,24 @@
 <body>
 <h1>Freeloader Tests</h1>
 
-<h2 style="color:red" class="t1">Pending...</h2>
+<h2 style="color:grey" class="t1">Pending...</h2>
 
 <div id="t2">
-<h2 style="color:red">Pending...</h2>
+<h2 style="color:grey">Pending...</h2>
 <script>
 setTimeout(function(){
-	$('#t2').html('<h2 style="color:red" class="t2">Pending...</h2>');
-},2000);
+	$('#t2').html('<h2 style="color:grey" class="t2">Pending...</h2>');
+},200);
 </script>
 </div>
 
-<h2 style="color:red" class="t3">Pending...</h2>
+<h2 style="color:grey" class="t3">Pending...</h2>
+
+<h2 style="color:grey" class="t4"><a href="" style="color:inherit;text-decoration:inherit;">Click me...</a></h2>
+
+<h2 style="color:grey" class="t5">Click me...</h2>
+
+<h2 style="color:grey" class="t6">Pending...</h2>
 
 <script>
 
@@ -41,6 +47,38 @@ freeloader.bind('t3', {
 		this.$el.css('color','green').text('Passed');
 	}
 });
+
+freeloader.bind('t4', {
+	events: {
+		'click a[href]': 'click'
+	},
+	click: function(ev){
+		ev.preventDefault();
+		this.$el.css('color','green').text('Passed');
+	}
+});
+
+freeloader.bind('t5', {
+	events: {
+		'click': 'click'
+	},
+	click: function(ev){
+		ev.preventDefault();
+		this.$el.css('color','green').text('Passed');
+	}
+});
+
+freeloader.bind('t6', {
+	subscriptions: {
+		't6-notify': 'ok'
+	},
+	ok: function(ev){
+		this.$el.css('color','green').text('Passed');
+	}
+});
+setTimeout(function(){
+	freeloader.send('t6-notify')
+},333);
 
 </script>
 </body>
