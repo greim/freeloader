@@ -114,23 +114,23 @@ THE SOFTWARE.
          * to the visibility API.
          */
         var _vis = (function(){
-            var hidden, visibilityChange; 
-            if (typeof document.hidden !== "undefined") { // Opera 12.10 and Firefox 18 and later support 
+            var hidden, visChange; 
+            if (typeof document.hidden !== "undefined") {
                 hidden = "hidden";
-                visibilityChange = "visibilitychange";
+                visChange = "visibilitychange";
             } else if (typeof document.mozHidden !== "undefined") {
                 hidden = "mozHidden";
-                visibilityChange = "mozvisibilitychange";
+                visChange = "mozvisibilitychange";
             } else if (typeof document.msHidden !== "undefined") {
                 hidden = "msHidden";
-                visibilityChange = "msvisibilitychange";
+                visChange = "msvisibilitychange";
             } else if (typeof document.webkitHidden !== "undefined") {
                 hidden = "webkitHidden";
-                visibilityChange = "webkitvisibilitychange";
+                visChange = "webkitvisibilitychange";
             }
             return {
                 onChange: function(cb){
-                    $(document).on(visibilityChange, cb);
+                    $(document).on(visChange, cb);
                 },
                 isHidden: function(){
                     return document[hidden];
@@ -146,7 +146,7 @@ THE SOFTWARE.
          */
         (function(){
             var tid, doc = document;
-            _vis.onChange(function(isVisible){
+            _vis.onChange(function(){
                 if (_vis.isHidden()) {
                     clearTimeout(tid);
                 } else {
@@ -161,7 +161,7 @@ THE SOFTWARE.
                 tid = setTimeout(loopCheck, interval());
             }
             if (!_vis.isHidden()) {
-                setTimeout(loopCheck,0);
+                loopCheck();
             }
         })();
 
@@ -197,11 +197,11 @@ THE SOFTWARE.
          * spec methods, and have el and $el properties.
          */
         function SuperSpec(el){
-            var spec = this;
+            var self = this;
             var $el = $(el);
-            spec.el = el;
-            spec.$el = $el;
-            _iterateObj(spec.events, function(key, action){
+            self.el = el;
+            self.$el = $el;
+            _iterateObj(self.events, function(key, action){
                 var matches = key.match(/^\s*(\S+)(\s+(.+))?$/i);
                 if (!matches) {
                     throw new Error('malformed event string: '+key);
@@ -209,7 +209,7 @@ THE SOFTWARE.
                 var eventType = matches[1];
                 var selector = matches[3];
                 var handler = function(ev){
-                    spec[action].apply(spec, arguments);
+                    self[action].apply(self, arguments);
                 };
                 if (selector) {
                     // use delegation
@@ -219,7 +219,7 @@ THE SOFTWARE.
                     $el.on(eventType, handler);
                 }
             });
-            spec.init();
+            self.init();
         }
 
         /*
@@ -243,17 +243,15 @@ THE SOFTWARE.
              * no-op versions are used.
              */
             init: _noop,
-            events: _empty,
-            subscriptions: _empty,
 
             /*
              * Called internally by freeloader.send(). In turn
              * calls an instance method.
              */
             send: function(name){
-                if (this.subscriptions[name]) {
+                if (this.subs && this.subs[name]) {
                     var args = _slice.call(arguments, 1);
-                    this[this.subscriptions[name]].apply(this, args);
+                    this[this.subs[name]].apply(this, args);
                 }
             },
 
