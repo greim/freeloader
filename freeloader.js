@@ -110,19 +110,60 @@ THE SOFTWARE.
         }
 
         /*
-         * Check the state of the DOM every so often.
+         * A way to set events on visibility changes according
+         * to the visibility API.
          */
-         (function(){
-             var interval = 50;
-             $(function(){ interval = 200; });
-            (function loopCheck(){
+        var _vis = (function(){
+            var hidden, visibilityChange; 
+            if (typeof document.hidden !== "undefined") { // Opera 12.10 and Firefox 18 and later support 
+                hidden = "hidden";
+                visibilityChange = "visibilitychange";
+            } else if (typeof document.mozHidden !== "undefined") {
+                hidden = "mozHidden";
+                visibilityChange = "mozvisibilitychange";
+            } else if (typeof document.msHidden !== "undefined") {
+                hidden = "msHidden";
+                visibilityChange = "msvisibilitychange";
+            } else if (typeof document.webkitHidden !== "undefined") {
+                hidden = "webkitHidden";
+                visibilityChange = "webkitvisibilitychange";
+            }
+            return {
+                onChange: function(cb){
+                    $(document).on(visibilityChange, cb);
+                },
+                isHidden: function(){
+                    return document[hidden];
+                }
+            };
+        })();
+
+        /*
+         * Check the state of the DOM every so often. If the
+         * user hides the page (e.g. switches to another tab)
+         * stop checking. If they switch back, start again.
+         * If the window isn't focused, slow down the checking.
+         */
+        (function(){
+            var tid, doc = document;
+            _vis.onChange(function(isVisible){
+                if (_vis.isHidden()) {
+                    clearTimeout(tid);
+                } else {
+                    loopCheck();
+                }
+            });
+            function interval(){
+                return doc.hasFocus() ? 200 : 2000;
+            }
+            function loopCheck(){
                 _scan();
-                // TODO: stop or slow down the scan during page
-                // invisibility, using the page visibility API.
-                // and/or check document focus state.
-                setTimeout(loopCheck, interval);
-            })();
-         })();
+                tid = setTimeout(loopCheck, interval());
+            }
+            if (!_vis.isHidden()) {
+                setTimeout(loopCheck,0);
+            }
+        })();
 
         /*
          * Provides a fail-safe for console errors. Some

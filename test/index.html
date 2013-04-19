@@ -28,6 +28,10 @@ setTimeout(function(){
 
 <h2 style="color:grey" class="t6">Pending...</h2>
 
+<h2 style="color:grey" class="t7">Pending...</h2>
+
+<h2 style="color:grey" class="t8">Pending...</h2>
+
 <script>
 
 freeloader.bind('t1', {
@@ -79,6 +83,23 @@ freeloader.bind('t6', {
 setTimeout(function(){
 	freeloader.send('t6-notify')
 },333);
+
+freeloader.bind('t7', {
+	init: function(){
+		this[this.foo]();
+	},
+	foo: 'bar',
+	bar: function(){
+		this.$el.css('color','green').text('Passed');
+	}
+});
+
+freeloader.bind('t8', {
+	init: function(){
+		this.el.style.color = 'green';
+		this.el.innerHTML = 'Passed';
+	}
+});
 
 </script>
 </body>
