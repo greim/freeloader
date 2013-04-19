@@ -93,10 +93,10 @@ THE SOFTWARE.
          * This function matches behavioral specs to DOM elements.
          */
         function _scan(cb){
-            for (var i=0, len=_specs.length; i<len; i++){
+            for (var i=0, leni=_specs.length; i<leni; i++){
                 var Spec = _specs[i];
                 var list = _byClass(Spec.className);
-                for (var j=0, len=list.length; j<len; j++){
+                for (var j=0, lenj=list.length; j<lenj; j++){
                     var el = list[j];
                     if (el[_tag] === undefined){
                         var tag = el[_tag] = {};
@@ -112,13 +112,17 @@ THE SOFTWARE.
         /*
          * Check the state of the DOM every so often.
          */
-        (function loopCheck(){
-            _scan();
-            // TODO: stop or slow down the scan during page
-            // invisibility, using the page visibility API.
-            // and/or check document focus state.
-            setTimeout(loopCheck,200);
-        })();
+         (function(){
+             var interval = 50;
+             $(function(){ interval = 200; });
+            (function loopCheck(){
+                _scan();
+                // TODO: stop or slow down the scan during page
+                // invisibility, using the page visibility API.
+                // and/or check document focus state.
+                setTimeout(loopCheck, interval);
+            })();
+         })();
 
         /*
          * Provides a fail-safe for console errors. Some
@@ -135,7 +139,7 @@ THE SOFTWARE.
          * objects.
          */
         function _iterateObj(obj, cb){
-            if (!_obj) {
+            if (!obj) {
                 return;
             }
             for (var name in obj) {

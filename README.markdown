@@ -1,10 +1,10 @@
 # FREELOADER
 
-Declarative behavior binding for browser DOM, plus message-based communication for loose coupling goodness. AMD-compatible. Declare your specs, then inject HTML all over the place. Or just let it operate on what got served. Requires jQuery.
+Declarative behavior binding for browsers, plus message-based communication for loose coupling goodness. AMD-compatible. Always live in the DOM. Friends with jQuery.
 
 ## Usage `freeloader.spec(className, specification)`
 
-This method binds a DOM className to a specification. The specification controls the behavior of elements having that className.
+Bind a className to a specification. The specification controls the behavior of elements having that className.
 
     // Bind a behavior specification to DOM elements having class 'someclass'.
     freeloader.bind('someclass', {

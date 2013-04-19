@@ -1,0 +1,47 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Freeloader Tests</title>
+<script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
+<script src="../freeloader.js"></script>
+</head>
+<body>
+<h1>Freeloader Tests</h1>
+
+<h2 style="color:red" class="t1">Pending...</h2>
+
+<div id="t2">
+<h2 style="color:red">Pending...</h2>
+<script>
+setTimeout(function(){
+	$('#t2').html('<h2 style="color:red" class="t2">Pending...</h2>');
+},2000);
+</script>
+</div>
+
+<h2 style="color:red" class="t3">Pending...</h2>
+
+<script>
+
+freeloader.bind('t1', {
+	init: function(){
+		this.$el.css('color','green').text('Passed');
+	}
+});
+
+freeloader.bind('t2', {
+	init: function(){
+		this.$el.css('color','green').text('Passed');
+	}
+});
+
+freeloader.bind('t3', {
+	init: function(){
+		this.$el.css('color','green').text('Passed');
+	}
+});
+
+</script>
+</body>
+</html>
