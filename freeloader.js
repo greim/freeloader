@@ -377,13 +377,15 @@ THE SOFTWARE.
         var _hasPushState = typeof window.pushState === 'function';
         _freeloader.navigate = function(url, args, ctx){
             args = new Args(args);
-            if (!_hasPushState) {
-                var res = args.pushStateFallback(url);
-                if (res !== undefined && !res) {
-                    return;
+            if (args.pushState) {
+                if (!_hasPushState) {
+                    var res = args.pushStateFallback(url);
+                    if (res !== undefined && !res) {
+                        return;
+                    }
+                } else {
+                    window.pushState(url);
                 }
-            } else {
-                window.pushState(url);
             }
             getUrl(url, function(err, doc){
                 if (err) {
