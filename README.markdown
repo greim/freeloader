@@ -8,7 +8,7 @@
 
 ## Usage `freeloader.bind(selector, controllerSpec)`
 
-Create a controller for all DOM nodes matching the given selector. `controllerSpec` becomes the prototype for controller instances that are bound to DOM nodes by freeloader. These instances are only reachable through the DOM, and thus are free to be garbage collected as soon as the DOM nodes they're bound to go away.
+Create a controller for all DOM nodes matching the given selector. `controllerSpec` becomes the prototype for controller instances that are bound to DOM nodes by freeloader. These instances are only reachable through the DOM, and thus are free to be garbage collected as soon as the DOM nodes they're bound to go away. The binding happens on DOM ready, and whenever you load new content into the page using freeloader.
 
     freeloader.bind('.foo #bar', {
       init:          <function> // (optional) Run when element first appears in the DOM.
@@ -98,6 +98,27 @@ Using this latter approach would add a new event handler to the window object fo
  * Page visibility change events
  * Any DOM event handled on `document.documentElement`
 
+## Usage `freeloader.navigate(url, options)`
+
+Navigate to a new page without refreshing the page. Uses history API and ajax fetch. The options object looks like this:
+
+    freeloader.navigate('page.html', {
+        from: string                // DOM selector for which part of new page to insert default: 'body'
+        to: string                  // DOM selector for which part of existing page to update default: 'body'
+        mode: string                // determines how to update the page
+                                    //     "replace"         - from replaces to[0].
+                                    //     "replaceChildren" - from[0]'s children replace to[0]'s children.
+                                    //     "inject"          - from replaces to[0]'s children.
+                                    //     "append"          - from is inserted after to[0]'s children.'
+                                    //     "prepend"         - from is inserted before to[0]'s children.
+                                    // default: 'replace'
+        scrollToTop: boolean        // whether to scroll to top. default: true
+        updateTitle: boolean        // whether to update document.title. default: true
+        pushState: boolean          // update url using history API. default: true
+        pushStateFallback: function // what to do in old browsers. default: refresh browser to new page
+        onload: function            // optional callback once fetch succeeds and page is updated. optional
+        onerror: function           // what to do if page fetch fails. optional
+    });
 
 
 
