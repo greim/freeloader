@@ -74,30 +74,14 @@ THE SOFTWARE.
         var _tag = '__fl' + _uString();
 
         /*
-         * A key feature of freeloader is that it operates on
-         * stored live node lists. Which makes it easy and
-         * inexpensive to look at the current state of the DOM.
-         */
-        var _byClass = (function(){
-            var lists = {};
-            return function(className){
-                var list = lists[className];
-                if (!list) {
-                    list = lists[className] = document.getElementsByClassName(className);
-                }
-                return list;
-            };
-        })();
-
-        /*
          * This function matches behavioral specs to DOM elements.
          */
         function _scan(cb){
             for (var i=0, leni=_specs.length; i<leni; i++){
                 var Spec = _specs[i];
-                var list = _byClass(Spec.className);
-                for (var j=0, lenj=list.length; j<lenj; j++){
-                    var el = list[j];
+                var $list = $(Spec.selector);
+                for (var j=0, lenj=$list.length; j<lenj; j++){
+                    var el = $list[j];
                     if (el[_tag] === undefined){
                         var tag = el[_tag] = {};
                     }
@@ -110,70 +94,9 @@ THE SOFTWARE.
         }
 
         /*
-         * A way to set events on visibility changes according
-         * to the visibility API.
+         * Scan the document on DOM ready.
          */
-        var _vis = (function(){
-            var hidden, visChange; 
-            if (typeof document.hidden !== "undefined") {
-                hidden = "hidden";
-                visChange = "visibilitychange";
-            } else if (typeof document.mozHidden !== "undefined") {
-                hidden = "mozHidden";
-                visChange = "mozvisibilitychange";
-            } else if (typeof document.msHidden !== "undefined") {
-                hidden = "msHidden";
-                visChange = "msvisibilitychange";
-            } else if (typeof document.webkitHidden !== "undefined") {
-                hidden = "webkitHidden";
-                visChange = "webkitvisibilitychange";
-            }
-            return {
-                onChange: function(cb){
-                    $(document).on(visChange, cb);
-                },
-                isHidden: function(){
-                    return document[hidden];
-                }
-            };
-        })();
-
-        /*
-         * Check the state of the DOM every so often. If the
-         * user hides the page (e.g. switches to another tab)
-         * stop checking. If they switch back, start again.
-         * If the window isn't focused, slow down the checking.
-         */
-        (function(){
-            var tid, doc = document;
-            _vis.onChange(function(){
-                if (_vis.isHidden()) {
-                    clearTimeout(tid);
-                } else {
-                    loopCheck();
-                }
-            });
-            function interval(){
-                return doc.hasFocus() ? 200 : 2000;
-            }
-            function loopCheck(){
-                _scan();
-                tid = setTimeout(loopCheck, interval());
-            }
-            if (!_vis.isHidden()) {
-                loopCheck();
-            }
-        })();
-
-        /*
-         * Provides a fail-safe for console errors. Some
-         * browsers don't always expose a console object.
-         */
-        function _consoleError(err) {
-            if (window.console && typeof console.error === 'function') {
-                console.error(err);
-            }
-        }
+        $(_scan);
 
         /*
          * Utility to iterate through the names and values of
@@ -196,7 +119,7 @@ THE SOFTWARE.
          * extend. Descendant instances will be 'this' in all
          * spec methods, and have el and $el properties.
          */
-        function SuperSpec(el){
+        function Spec(el){
             var self = this;
             var $el = $(el);
             self.el = el;
@@ -226,17 +149,17 @@ THE SOFTWARE.
          * This function's job is to keep the prototype
          * chain intact.
          */
-        SuperSpec.extend = function(protoProps) {
+        Spec.extend = function(protoProps) {
             var parent = this;
-            var Spec = function(){ return parent.apply(this, arguments); };
-            var Surrogate = function(){ this.constructor = Spec; };
+            var ChildSpec = function(){ return parent.apply(this, arguments); };
+            var Surrogate = function(){ this.constructor = ChildSpec; };
             Surrogate.prototype = parent.prototype;
-            Spec.prototype = new Surrogate;
-            $.extend(Spec.prototype, protoProps);
-            return Spec;
+            ChildSpec.prototype = new Surrogate;
+            $.extend(ChildSpec.prototype, protoProps);
+            return ChildSpec;
         };
 
-        $.extend(SuperSpec.prototype, {
+        Spec.prototype = {
 
             /*
              * If things are not overridden by the spec, these
@@ -261,7 +184,7 @@ THE SOFTWARE.
             $: function(){
                 return $.find.apply(this.$el, arguments);
             }
-        });
+        };
 
         /*
          * This is the object to be exported.
@@ -272,27 +195,19 @@ THE SOFTWARE.
          * This creates a specification for a DOM element.
          * Its single argument is a specification object.
          */
-        _freeloader.bind = function(className, spec){
-
-            /*
-             * This is the only required thing. Verify
-             * that it exists.
-             */
-            if (!className){
-                throw new Error('missing className');
-            }
+        _freeloader.bind = function(selector, spec){
 
             /*
              * A spec is a constructor with a static id.
              */
-            var Spec = SuperSpec.extend(spec);
-            Spec.id = _uString();
-            Spec.className = className;
+            var ChildSpec = Spec.extend(spec);
+            ChildSpec.id = _uString();
+            ChildSpec.selector = selector;
 
             /*
              * Save this spec in the list.
              */
-            _specs.push(Spec);
+            _specs.push(ChildSpec);
         };
 
         /**
@@ -310,8 +225,224 @@ THE SOFTWARE.
         };
 
         /*
+         * A function that takes a string of HTML and returns a document object.
+         */
+        var _parseDocument = (function() {
+            function createDocumentUsingParser(html) {
+                return (new DOMParser()).parseFromString(html, 'text/html');
+            }
+            function createDocumentUsingDOM(html) {
+                var doc = document.implementation.createHTMLDocument('');
+                doc.documentElement.innerHTML = html;
+                return doc;
+            }
+            function createDocumentUsingWrite(html) {
+                var doc = document.implementation.createHTMLDocument('');
+                doc.open('replace');
+                doc.write(html);
+                doc.close();
+                return doc;
+            }
+            /*
+             * Use createDocumentUsingParser if DOMParser is defined and natively
+             * supports 'text/html' parsing (Firefox 12+, IE 10)
+             * 
+             * Use createDocumentUsingDOM if createDocumentUsingParser throws an exception
+             * due to unsupported type 'text/html' (Firefox < 12, Opera)
+             * 
+             * Use createDocumentUsingWrite if:
+             *  - DOMParser isn't defined
+             *  - createDocumentUsingParser returns null due to unsupported type 'text/html' (Chrome, Safari)
+             *  - createDocumentUsingDOM doesn't create a valid HTML document (safeguarding against potential edge cases)
+             */
+            var parser;
+            if (window.DOMParser) {
+                try {
+                    var testDoc = createDocumentUsingParser('<html><body><p>test');
+                    if (testDoc && testDoc.body && testDoc.body.childNodes.length === 1) {
+                        parser = createDocumentUsingParser;
+                    }
+                } catch(ex) {
+                    parser = createDocumentUsingDOM;
+                }
+            }
+            if (!parser) {
+                parser = createDocumentUsingWrite;
+            }
+            return parser;
+        })();
+
+        /*
+         * A function that fetches a page and passes a
+         * document object to the callback.
+         */
+        function getUrl(url, callback){
+            $.ajax(url, {
+                type: 'GET',
+                dataType: 'html',
+                success: function(html){
+                    var doc = _parseDocument(html);
+                    callback(null, doc);
+                },
+                error: function(xhr, status, message){
+                    callback(new Error(message));
+                }
+            });
+        };
+
+        /*
+         * Args class with default properties for customizing navigate actions.
+         */
+        function Args(args){
+            $.extend(this, args);
+        };
+
+        Args.prototype = {
+
+            /*
+             * String parameter controlling how content is copied from the
+             * new page to the existing page. Can take one of these values:
+             * 
+             *     "replace" - from replaces to[0].
+             *     "replaceChildren" - from[0]'s children replace to[0]'s children.
+             *     "inject" - from replaces to[0]'s children.
+             *     "append" - from is inserted after to[0]'s children.'
+             *     "prepend" - from is inserted before to[0]'s children.
+             *
+             * Where from/to is the set of elements matching the from/to selectors below. Defaults to "replace".
+             */
+            mode: 'replace',
+
+            /*
+             * A jQuery selector which determines where in the newly-loaded
+             * DOM to get the content from. Defaults to 'body'.
+             */
+            from: 'body',
+
+            /*
+             * A jQuery selector which determines where in the existing
+             * DOM the new content will go. Defaults to 'body'.
+             */
+            to: 'body',
+
+            /*
+             * Callback to run once the DOM has been loaded and inserted
+             * into the DOM. Optional.
+             */
+            onload: function(){},
+
+            /*
+             * Callback to run if there's an error fetching the page. Optional.
+             */
+            onerror: function(){},
+
+            /*
+             * Whether the page should be scrolled to top once the content
+             * has been loaded. Defaults to true.
+             */
+            scrollToTop: true,
+
+            /*
+             * Whether the page title should be updated once the content
+             * has been loaded. Defaults to true.
+             */
+            updateTitle: true,
+
+            /*
+             * Whether the URL will be updated using the history API. Defaults
+             * to true.
+             */
+            pushState: true,
+
+            /*
+             * Function to handle cases where the history API isn't supported
+             * in the user's browser. Explicitly returning false from this
+             * function prevents the operation from proceeding. The default
+             * behavior is to set window.location.href = url and then return
+             * false.
+             */
+            pushStateFallback: function(url){
+                location.href = url;
+                return false;
+            }
+        };
+
+        /*
+         * Navigate to a new page, but instead of refreshing the whole page,
+         * do an ajax fetch and update specific parts of the DOM. This avoids
+         * the overhead of reloading JS and CSS, and otherwise rebuilding the
+         * overall window environment. This also automatically binds freeloader
+         * specs to appropriate elements.
+         */
+        var _hasPushState = typeof window.pushState === 'function';
+        _freeloader.navigate = function(url, args, ctx){
+            args = new Args(args);
+            if (!_hasPushState) {
+                var res = args.pushStateFallback(url);
+                if (res !== undefined && !res) {
+                    return;
+                }
+            } else {
+                window.pushState(url);
+            }
+            getUrl(url, function(err, doc){
+                if (err) {
+                    args.onError.call(ctx, err);
+                } else {
+                    _load($(doc).find(args.from), $(args.to).eq(0), args.mode);
+                    if (args.updateTitle) {
+                        document.title = doc.title;
+                    }
+                    if (args.scroll) {
+                        window.scrollTo(0,0);
+                    }
+                    args.onLoad.call(ctx);
+                }
+            });
+        };
+
+        /*
+         * Function to load DOM on the page, and also bind freeloader specs.
+         * Usage: freeloader.load(from, to, mode);
+         * @param from - elements to load content from. can be anything that goes in $(...)
+         * @param to - elements to load content into. can be anything that goes in $(...)
+         * @param mode - how to transfer the content. follows same rules as above.
+         */
+        var _load = function(from, to, mode){
+            var $to = $(to).eq(0);
+            var $from = $(from);
+            if (mode === 'replaceChildren') {
+                $from = $from.children();
+                $from.remove();
+                $to.html($from);
+            } else if (mode === 'inject') {
+                $from.remove();
+                $to.html($from);
+            } else if (mode === 'prepend') {
+                $from.remove();
+                $to.prepend($from);
+            } else if (mode === 'append') {
+                $from.remove();
+                $to.append($from);
+            } else { // replace
+                $from.remove();
+                $to.replaceWith($from);
+            }
+            _scan();
+        };
+
+        /*
          * Return from the define() call.
          */
         return _freeloader;
     });
 })(window);
+
+
+
+
+
+
+
+
+
