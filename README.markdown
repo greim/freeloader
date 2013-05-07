@@ -26,14 +26,12 @@ The similarities between freeloader controllers and Backbone views are intention
 
     freeloader.bind('.foo #bar', {
       initialize: function(){ ... }
-      userMethod: function(){ ... }
       events: { ... }
       subscriptions: { ... } // <-- not part of Backbone
     });
 
     var MyView = Backbone.View.extend({
       initialize: function(){ ... }
-      userMethod: function(){ ... }
       events: { ... }
       render: function(){ ... } // <-- not part of freeloader
     });
@@ -58,9 +56,9 @@ The events object works like this:
     freeloader.bind('.foo #bar', {
       ...
       events: {
-        '<event> <selector>': '<method>' // delegate <event> on the element for <selector>
-        '<event>': '<method>'            // listen for <event> directly on element (no delegation)
-      }                                  // '<method>' is called by name on the controller instance
+        'event selector': 'method' // delegate event on the element for selector
+        'event': 'method'          // listen for event directly on element (no delegation)
+      }                            // 'method' is called by name on the controller instance
       ...
     });
 
@@ -69,7 +67,7 @@ Subscriptions objects work like this:
     freeloader.bind('.foo #bar', {
       ...
       subscriptions: {
-        '<type>': '<method>' // call <method> when there's a message of type <type>
+        'type': 'method' // call method when there's a message of type type
       }
       ...
     });
@@ -81,7 +79,10 @@ freeloader provides a means of loosely-coupled, top-down messaging, allowing glo
     freeloader.bind('.foo #bar', {
       ...
       subscriptions: {
-        'resize': 'adjustFit'
+        resize: 'adjustFit'
+      },
+      adjustFit: function(){
+        ...
       }
       ...
     });
@@ -105,7 +106,7 @@ Which is better than doing the following:
       ...
     });
 
-...which would add a new event handler to the window object for each bound element. If these handlers weren't removed manually, then they'd accumulate and tie up system resources, causing memory leaks and unnecessary CPU load, long after they had disappeared from the user's view. Freeloader's messaging system avoids this issue using a form of lazy event binding.
+...which would add a new event handler to the window object for each bound element. If these handlers weren't removed manually, they'd accumulate and tie up system resources, causing memory leaks and unnecessary CPU load long after they disappeared from the live DOM. Freeloader's messaging system avoids this issue using a form of lazy event binding.
 
 ### Examples of global events that individual controllers might be interested in subscribing to:
 
