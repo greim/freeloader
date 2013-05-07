@@ -9,9 +9,9 @@
  * Designed to look familiar to Backbone.js developers.
  * Loosely-coupled global events via a publish/subscribe model.
 
-## Usage `freeloader.bind(selector, controllerSpec)`
+## Usage `freeloader.bind(selector, controller)`
 
-Create a controller for all DOM nodes matching the given selector. `controllerSpec` becomes the prototype for controller instances that are bound to DOM nodes by freeloader. These instances are only reachable through the DOM, and thus are free to be garbage collected as soon as the DOM nodes they're bound to go away. The binding happens on DOM ready, and whenever you load new content into the page using freeloader.
+Create a controller for all DOM nodes matching the given selector. `controller` becomes the prototype for controller instances that are bound to DOM nodes on the fly by freeloader. From a garbage-collection perspective, these instances are only reachable through the DOM, and thus are free to be garbage collected as soon as the DOM nodes they're bound to go away. The binding happens on DOM ready, and whenever you load new content into the page using freeloader, or whenever you tell freeloader to explicitly check for unbound nodes using the `freeloader()` jQuery plugin.
 
     freeloader.bind('.foo #bar', {
       initialize:    <function> // (optional) Run when element first appears in the DOM.
@@ -139,6 +139,7 @@ Navigate to a new page without refreshing the page using ajax and history API. T
         onerror: function           // what to do if page fetch fails. optional
     });
 
+## Usage `$(anything).freeloader()`
 
-
+This is a helper jQuery plugin to explicitly tell freeloader to check a given section of the DOM for unbound elements. You don't need to do this when you do `freeloader.navigate()`, however if you load new content into the page by some other means, you'll need to do this. This method is idempotent, so calling it multiple times has no adverse affect other than using up CPU cycles.
 

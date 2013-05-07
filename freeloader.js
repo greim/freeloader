@@ -342,7 +342,9 @@ THE SOFTWARE.
             /*
              * Callback to run if there's an error fetching the page. Optional.
              */
-            onerror: function(){},
+            onerror: function(error, url){
+                location.href = url;
+            },
 
             /*
              * Whether the page should be scrolled to top once the content
@@ -397,7 +399,7 @@ THE SOFTWARE.
             }
             getUrl(url, function(err, doc){
                 if (err) {
-                    args.onError.call(ctx, err);
+                    args.onerror.call(ctx, err, url);
                 } else {
                     _load($(doc).find(args.from), $(args.to).eq(0), args.mode);
                     if (args.updateTitle) {
@@ -406,7 +408,7 @@ THE SOFTWARE.
                     if (args.scroll) {
                         window.scrollTo(0,0);
                     }
-                    args.onLoad.call(ctx);
+                    args.onload.call(ctx);
                 }
             });
         };
