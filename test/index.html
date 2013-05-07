@@ -32,27 +32,29 @@ setTimeout(function(){
 
 <h2 style="color:grey" class="t8">Pending...</h2>
 
+<h2 style="color:grey" class="t9">Pending...</h2>
+
 <script>
 
-freeloader.bind('t1', {
+freeloader.bind('.t1', {
 	init: function(){
 		this.$el.css('color','green').text('Passed');
 	}
 });
 
-freeloader.bind('t2', {
+freeloader.bind('.t2', {
 	init: function(){
 		this.$el.css('color','green').text('Passed');
 	}
 });
 
-freeloader.bind('t3', {
+freeloader.bind('.t3', {
 	init: function(){
 		this.$el.css('color','green').text('Passed');
 	}
 });
 
-freeloader.bind('t4', {
+freeloader.bind('.t4', {
 	events: {
 		'click a[href]': 'click'
 	},
@@ -62,7 +64,7 @@ freeloader.bind('t4', {
 	}
 });
 
-freeloader.bind('t5', {
+freeloader.bind('.t5', {
 	events: {
 		'click': 'click'
 	},
@@ -72,7 +74,7 @@ freeloader.bind('t5', {
 	}
 });
 
-freeloader.bind('t6', {
+freeloader.bind('.t6', {
 	subs: {
 		't6-notify': 'ok'
 	},
@@ -84,7 +86,7 @@ setTimeout(function(){
 	freeloader.send('t6-notify')
 },333);
 
-freeloader.bind('t7', {
+freeloader.bind('.t7', {
 	init: function(){
 		this[this.foo]();
 	},
@@ -94,12 +96,24 @@ freeloader.bind('t7', {
 	}
 });
 
-freeloader.bind('t8', {
+freeloader.bind('.t8', {
 	init: function(){
 		this.el.style.color = 'green';
 		this.el.innerHTML = 'Passed';
 	}
 });
+
+freeloader.bind('.t9', {
+	subs: {
+		'foo':'foo'
+	},
+	foo: function(){
+		this.el.style.color = 'green';
+		this.el.innerHTML = 'Passed';
+	}
+});
+
+freeloader.send('foo');
 
 </script>
 </body>

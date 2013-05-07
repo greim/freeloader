@@ -1,17 +1,20 @@
 # freeloader is:
 
  * Experimental.
- * Pseudo-declarative behavior binding for browsers.
- * Message-based communication for loose coupling goodness.
  * AMD-compatible.
  * Friends with jQuery.
+ * Fast page reloads with ajax.
+ * Not a client-side MVC framework.
+ * Pseudo-declarative behavior binding for browsers.
+ * Designed to look familiar to Backbone.js developers.
+ * Loosely-coupled global events via a publish/subscribe model.
 
 ## Usage `freeloader.bind(selector, controllerSpec)`
 
 Create a controller for all DOM nodes matching the given selector. `controllerSpec` becomes the prototype for controller instances that are bound to DOM nodes by freeloader. These instances are only reachable through the DOM, and thus are free to be garbage collected as soon as the DOM nodes they're bound to go away. The binding happens on DOM ready, and whenever you load new content into the page using freeloader.
 
     freeloader.bind('.foo #bar', {
-      init:          <function> // (optional) Run when element first appears in the DOM.
+      initialize:    <function> // (optional) Run when element first appears in the DOM.
       events:        <object>   // (optional) Delegate events on the element.
       subscriptions: <object>   // (optional) Subscribe to messages, AKA global events.
       myProperty1:   <anything>
@@ -19,16 +22,32 @@ Create a controller for all DOM nodes matching the given selector. `controllerSp
       ...
     });
 
-The `init` method works like this:
+The similarities between freeloader controllers and backbone views are intentional. Freeloader was built to provide an easy migration strategy away from backbone. Backbone views are partly controllers, and partly views, whereas freeloader controllers arern't views (no template rendering) and add another aspect of control via subscriptions.
+
+    freeloader.bind('.foo #bar', {
+      initialize: function(){ ... }
+      userMethod: function(){ ... }
+      events: { ... }
+      subscriptions: { ... } // <-- not part of backbone
+    });
+
+    var MyView = Backbone.View.extend({
+      initialize: function(){ ... }
+      userMethod: function(){ ... }
+      events: { ... }
+      render: function(){ ... } // <-- not part of freeloader
+    });
+
+The `initialize` method works like this:
 
     freeloader.bind('.foo #bar', {
       ...
-      init: function() {
-        // `this` is the controller instance
-        // `this.el` is an element that's live in the document
-        // `this.$el` is a jQuery object, wrapping the DOM element
+      initialize: function() {
+        // `this` is a controller instance
+        // `this.el` is the instance element
+        // `this.$el` is a jQuery object wrapping the instance element
         // `this.$` is shorthand for `this.$el.find`
-        // $.contains(document.documentElement, this.el) === true
+        $.contains(document.documentElement, this.el) === true
       }
       ...
     });
@@ -54,7 +73,7 @@ Subscriptions objects work like this:
       ...
     });
 
-## Usage `freeloader.send('<type>')`
+## Usage `freeloader.publish(messageType)`
 
 freeloader provides a means of loosely-coupled, top-down messaging, allowing global events to broadcast commands to controller instances that are live in the document.
 
@@ -69,7 +88,7 @@ freeloader provides a means of loosely-coupled, top-down messaging, allowing glo
     // meanwhile
 
     $(window).on('resize', function(){
-      freeloader.send('resize');
+      freeloader.publish('resize');
     });
 
 Which is better than doing the following:
@@ -87,30 +106,30 @@ Which is better than doing the following:
 
 Using this latter approach would add a new event handler to the window object for each bound element. If these handlers weren't removed manually, then they'd accumulate and tie up system resources, causing memory leaks and unnecessary CPU load, long after they had disappeared from the user's view. Freeloader's messaging system avoids this issue.
 
-### Examples of messagable events
+### Examples of global events that controllers might be interested in:
 
- * Window resize events
- * Orientation change events on mobile devices
- * Cross-window communication events
- * Incoming events from websockets
- * Local storage events
- * History API events
- * Page visibility change events
- * Any DOM event handled on `document.documentElement`
+ * Window resize
+ * Orientation change on mobile devices
+ * Cross-window communications
+ * Incoming communications over websockets
+ * Local storage updates
+ * History API pops and pushes
+ * Page visibility change
+ * Off-element clicks to close a dialog
 
 ## Usage `freeloader.navigate(url, options)`
 
-Navigate to a new page without refreshing the page. Uses history API and ajax fetch. The options object looks like this:
+Navigate to a new page without refreshing the page using ajax and history API. The options object looks like this:
 
     freeloader.navigate('page.html', {
-        from: string                // DOM selector for which part of new page to insert default: 'body'
-        to: string                  // DOM selector for which part of existing page to update default: 'body'
+        from: string                // selects which part of new page to extract and insert into existing page. default: 'body'
+        to: string                  // selects which part of existing page to receive new content. default: 'body'
         mode: string                // determines how to update the page
-                                    //     "replace"         - from replaces to[0].
-                                    //     "replaceChildren" - from[0]'s children replace to[0]'s children.
-                                    //     "inject"          - from replaces to[0]'s children.
-                                    //     "append"          - from is inserted after to[0]'s children.'
-                                    //     "prepend"         - from is inserted before to[0]'s children.
+                                    //     "replace"         - $(from) replaces $(to).
+                                    //     "replaceChildren" - $(from)'s children replace $(to)'s children.
+                                    //     "inject"          - $(from) replaces $(to)'s children.
+                                    //     "append"          - $(from) is inserted after $(to)'s children.'
+                                    //     "prepend"         - $(from) is inserted before $(to)'s children.
                                     // default: 'replace'
         scrollToTop: boolean        // whether to scroll to top. default: true
         updateTitle: boolean        // whether to update document.title. default: true

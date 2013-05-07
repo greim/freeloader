@@ -37,9 +37,9 @@ THE SOFTWARE.
      */
     define(['jquery'], function($){
 
-        /*
-         * Keep a copy of the slice method around.
-         */
+        var _loaded = false;
+        $(function(){ _loaded = true; });
+        var _docEl = document.documentElement;
         var _slice = [].slice;
 
         /*
@@ -54,7 +54,6 @@ THE SOFTWARE.
          * new stuff.
          */
         var _noop = function(){};
-        var _empty = {};
 
         /*
          * Utility to generate unique strings local to here.
@@ -76,10 +75,11 @@ THE SOFTWARE.
         /*
          * This function matches behavioral specs to DOM elements.
          */
-        function _scan(cb){
+        function _scan(cb, root){
+            root = root || _docEl;
             for (var i=0, leni=_specs.length; i<leni; i++){
                 var Spec = _specs[i];
-                var $list = $(Spec.selector);
+                var $list = $(Spec.selector, root);
                 for (var j=0, lenj=$list.length; j<lenj; j++){
                     var el = $list[j];
                     if (el[_tag] === undefined){
@@ -142,7 +142,7 @@ THE SOFTWARE.
                     $el.on(eventType, handler);
                 }
             });
-            self.init();
+            self.initialize();
         }
 
         /*
@@ -165,16 +165,16 @@ THE SOFTWARE.
              * If things are not overridden by the spec, these
              * no-op versions are used.
              */
-            init: _noop,
+            initialize: _noop,
 
             /*
-             * Called internally by freeloader.send(). In turn
+             * Called internally by freeloader.publish(). In turn
              * calls an instance method.
              */
-            send: function(name){
-                if (this.subs && this.subs[name]) {
+            publish: function(name){
+                if (this.subscriptions && this.subscriptions[name]) {
                     var args = _slice.call(arguments, 1);
-                    this[this.subs[name]].apply(this, args);
+                    this[this.subscriptions[name]].apply(this, args);
                 }
             },
 
@@ -208,6 +208,14 @@ THE SOFTWARE.
              * Save this spec in the list.
              */
             _specs.push(ChildSpec);
+
+            /*
+             * Rescan the page if we're past the initial
+             * load event.
+             */
+            if (_loaded) {
+                _scan();
+            }
         };
 
         /**
@@ -215,11 +223,11 @@ THE SOFTWARE.
          * happen to be listening. Accepts a type string and
          * any optional arguments.
          */
-        _freeloader.send = function(name){
-            var sendArgs = arguments;
+        _freeloader.publish = function(name){
+            var pubArgs = arguments;
             _scan(function(el){
                 _iterateObj(el[_tag], function(id, instance){
-                    instance.send.apply(instance, sendArgs);
+                    instance.publish.apply(instance, pubArgs);
                 });
             });
         };
@@ -430,7 +438,18 @@ THE SOFTWARE.
                 $from.remove();
                 $to.replaceWith($from);
             }
-            _scan();
+            $from.freeloader();
+        };
+
+        /*
+         * Helper plugin for binding new elements:
+         * $(stuff).append(moreStuff).freeloader();
+         */
+        $.fn.freeloader = function(){
+            this.each(function(){
+                _scan(undefined, this);
+            });
+            return this;
         };
 
         /*
