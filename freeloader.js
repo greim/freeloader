@@ -70,7 +70,20 @@ THE SOFTWARE.
          * name so it knows which nodes it has seen and
          * which it hasn't.
          */
-        var _tag = '__fl' + _uString();
+        var _tag = '__fl' + ((Math.random()+'').replace(/.*(\d\d\d\d)$/,'$1'));
+
+        /*
+         * Converts an arbitrary string into a valid HTML className.
+         * This isn't a 1:1 mapping, for example 'foo bar' and 'foo_bar'
+         * both map to 'foo_bar'.
+         */
+        var _toSubsClassName = (function(){
+            var patt = /[^a-z0-9_-]/ig;
+            return function(name) {
+                name = name.replace(patt, '_');
+                return _tag + '_subscribes_' + name;
+            };
+        })();
 
         /*
          * This function finds unbound elements and binds them.
@@ -84,7 +97,9 @@ THE SOFTWARE.
                     var el = $list[j];
                     if (el[_tag] === undefined){
                         var tag = el[_tag] = {};
-                        $(el).addClass(_tag);
+                        _iterateObj(Spec.prototype.subscriptions, function(name, val){
+                            $(el).addClass(_toSubsClassName(name));
+                        });
                     }
                     if (!el[_tag].hasOwnProperty(Spec.id)){
                         el[_tag][Spec.id] = new Spec(el);
@@ -95,12 +110,10 @@ THE SOFTWARE.
         }
 
         /*
-         * This is a way to revisit every bound element as quickly as possible.
-         * It works faster on newer browsers since we can just grab the live
-         * node list once and iterate it whenever we need. On older browsers
-         * it falls back to slower methods.
+         * Get a list of elements bound to controllers that
+         * subscribe to a given name.
          */
-        var _getBound = (function(){
+        var _getElsBySubName = (function(){
             var byClass = (function(){
                 var lists = {};
                 var hasGEBCN = typeof _docEl.getElementsByClassName === 'function';
@@ -123,8 +136,14 @@ THE SOFTWARE.
                     };
                 }
             })();
-            return function(){
-                return byClass(_tag);
+            return function(name){
+                // _toSubsClassName() may occasionally map two different names
+                // to the same className. In the worst case, such collisions
+                // won't break this behavior, but may cause a performance
+                // hit, since the purpose of looking up things by className is
+                // to narrow the search space when finding elements that
+                // subscribe to a given name.
+                return byClass(_toSubsClassName(name));
             };
         })();
 
@@ -254,18 +273,17 @@ THE SOFTWARE.
         };
 
         /**
-         * Send a notification to any instance elements that
-         * happen to be listening. Accepts a type string and
-         * any optional arguments.
+         * Send a notification to any controllers that happen
+         * to be live in the DOM and listening.
          */
         _freeloader.publish = function(name){
             var pubArgs = arguments;
-            var boundElements = _getBound(name);
-            for (var i=0, len=boundElements.length; i<len; i++){
-                var tag = boundElements[i][_tag];
-                for (var id in tag) {
-                    if (tag.hasOwnProperty(id)) {
-                        tag[id].publish.apply(instance, pubArgs);
+            var subscribingEls = _getElsBySubName(name);
+            for (var i=0, len=subscribingEls.length; i<len; i++){
+                var tag = subscribingEls[i][_tag];
+                for (var specId in tag) {
+                    if (tag.hasOwnProperty(specId)) {
+                        tag[specId].publish.apply(tag[specId], pubArgs);
                     }
                 }
             }
@@ -274,7 +292,7 @@ THE SOFTWARE.
         /*
          * A function that takes a string of HTML and returns a document object.
          */
-        var _parseDocument = (function() {
+        var _parseDocument = (function(){
             function createDocumentUsingParser(html) {
                 return (new DOMParser()).parseFromString(html, 'text/html');
             }
@@ -351,15 +369,7 @@ THE SOFTWARE.
 
             /*
              * String parameter controlling how content is copied from the
-             * new page to the existing page. Can take one of these values:
-             * 
-             *     "replaceRoot" - content replaces target.
-             *     "replace" - content's children replace target's children.
-             *     "prepend" - content's children are inserted before target's children.
-             *     "append" - content's children are inserted after target's children.
-             *
-             * Where content/target is the set of elements matching the
-             * content/target selectors below. Defaults to "replaceRoot".
+             * new page to the existing page.
              */
             mode: 'replace',
 
@@ -426,7 +436,7 @@ THE SOFTWARE.
          * overall window environment. This also automatically binds freeloader
          * specs to appropriate elements.
          */
-        var _hasPushState = typeof window.pushState === 'function';
+        var _hasPushState = window.history && window.history.pushState;
         _freeloader.navigate = function(url, args, ctx){
             args = new Args(args);
             if (args.pushState) {
@@ -465,7 +475,7 @@ THE SOFTWARE.
         var _load = function(content, target, mode){
             var $target = $(target).eq(0);
             var $content = $(content);
-            if (mode === 'replace') {
+            if (mode === 'fill') {
                 $content = $content.children();
                 $content.remove();
                 $target.html($content);
@@ -477,6 +487,21 @@ THE SOFTWARE.
                 $content = $content.children();
                 $content.remove();
                 $target.append($content);
+            } else if (mode === 'fillInto') {
+                $content.remove();
+                $target.html($content);
+            } else if (mode === 'prependInto') {
+                $content.remove();
+                $target.prepend($content);
+            } else if (mode === 'appendInto') {
+                $content.remove();
+                $target.append($content);
+            } else if (mode === 'before') {
+                $content.remove();
+                $target.before($content);
+            } else if (mode === 'after') {
+                $content.remove();
+                $target.after($content);
             } else { // replaceRoot
                 $content.remove();
                 $target.replaceWith($content);

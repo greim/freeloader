@@ -123,10 +123,15 @@ Navigate to a new page, without refreshing the page, using ajax and the history 
         target: string       // selects part of existing page to receive new content. default: 'body'
         content: string      // selects part of new page to extract and insert into existing page. default: same as target
         mode: string         // determines how to update the page
-                             //     "replaceRoot" - $(content) replaces $(target). (default)
-                             //     "replace"     - $(content)'s children replace $(target)'s children.
-                             //     "prepend"     - $(content)'s children are inserted before $(target)'s children.
-                             //     "append"      - $(content)'s children are inserted after $(target)'s children.
+                             //     "replace"     - content replaces target. (default)
+                             //     "before"      - content is inserted before target.
+                             //     "after"       - content is inserted after target.
+                             //     "fill"        - content's children replace target's children.
+                             //     "prepend"     - content's children are inserted before target's children.
+                             //     "append"      - content's children are inserted after target's children.
+                             //     "fillInto"    - content replaces target's children.
+                             //     "prependInto" - content is inserted before target's children.
+                             //     "appendInto"  - content is inserted after target's children.
         scrollToTop: boolean // whether to scroll to top. default: true
         updateTitle: boolean // whether to update document.title. default: true
         pushState: boolean   // whether to update url using history API. default: true
@@ -139,7 +144,7 @@ For example, to navigate to a new page, do:
 
     freeloader.navigate('/photos');
 
-To implement an infinite scroll, do:
+To automatically add content as the user scrolls, do:
 
     freeloader.navigate('/photos?page=2', {
       target: '#photos',
@@ -155,11 +160,7 @@ This is a helper jQuery plugin to explicitly tell freeloader to check a given se
 
 # Freeloader Philosophy
 
-If freeloader seems more simplistic than an MVC framework like Backbone, that's because it is. However, freeloader isn't necessarily for simpler apps. Rather, it's the client-side piece of an app where data models and template rendering happen mainly on the server. 
-
-Why? The SPI paradigm has issues which vary in significance depending on what you're trying to do. It comes down to three main things. 1) Content is invisible to search engines. 2) All-client-side means more code and a larger performance burden on the client device. Of course there are optimizations and tricks to get around these two issues. But the fact that you have to use "optimizations" and "tricks" may be the universe's way of telling you that 3) The SPI paradigm goes against the grain of how the web works. The web has always been documents accessable via URLs over HTTP. This is really the most concise summary of the problem with SPIs.
-
-This isn't to say that SPIs are never the right solution. Rather, like any tool they're better suited to some tasks than others. Freeloader offers an alternative to SPIs for building content-driven, URL-accessable websites. For complex UIs where you're less likely to need to bookmark or search specific states, then SPIs remain a compelling choice.
+Freeloader provides a set of client-side abstractions for building complex webapps where page rendering happens mainly on the server. 
 
 
 
