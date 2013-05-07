@@ -449,6 +449,9 @@ THE SOFTWARE.
          */
         $.fn.freeloader = function(){
             this.each(function(){
+                if (!$.contains(_docEl, this)) {
+                    throw new Error('freeloader() called on non-live node');
+                }
                 _scan(undefined, this);
             });
             return this;
