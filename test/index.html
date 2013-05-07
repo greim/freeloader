@@ -34,6 +34,8 @@ setTimeout(function(){
 
 <h2 style="color:grey" class="t9">Pending...</h2>
 
+<h2 style="color:grey" class="t10">Pending...</h2>
+
 <script>
 
 freeloader.bind('.t1', {
@@ -115,6 +117,14 @@ freeloader.bind('.t9', {
 
 $(function(){
 	freeloader.publish('foo');
+});
+
+freeloader.navigate('./loadme.html', {
+	content: 'h1',
+	target: '.t10',
+    scrollToTop: false,
+    updateTitle: false,
+    pushState: false
 });
 
 </script>
