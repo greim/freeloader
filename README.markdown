@@ -124,14 +124,14 @@ Examples of global events that individual controllers might be interested in sub
 Navigate to a new page, without refreshing the page, using ajax and the history API. Freeloader automatically checks the new content for unbound nodes and binds them. The options object looks like this:
 
     freeloader.navigate('/my/page', {
-        from: string         // selects which part of new page to extract and insert into existing page. default: 'body'
-        to: string           // selects which part of existing page to receive new content. default: 'body'
+        content: string      // selects which part of new page to extract and insert into existing page. default: 'body'
+        target: string       // selects which part of existing page to receive new content. default: 'body'
         mode: string         // determines how to update the page
-                             //     "replace"         - $(from) replaces $(to). (default)
-                             //     "replaceChildren" - $(from)'s children replace $(to)'s children.
-                             //     "inject"          - $(from) replaces $(to)'s children.
-                             //     "append"          - $(from) is inserted after $(to)'s children.'
-                             //     "prepend"         - $(from) is inserted before $(to)'s children.
+                             //     "replace"         - $(content) replaces $(target). (default)
+                             //     "replaceChildren" - $(content)'s children replace $(target)'s children.
+                             //     "inject"          - $(content) replaces $(target)'s children.
+                             //     "append"          - $(content) is inserted after $(target)'s children.
+                             //     "prepend"         - $(content) is inserted before $(target)'s children.
         scrollToTop: boolean // whether to scroll to top. default: true
         updateTitle: boolean // whether to update document.title. default: true
         pushState: boolean   // whether to update url using history API. default: true

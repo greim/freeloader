@@ -311,27 +311,27 @@ THE SOFTWARE.
              * String parameter controlling how content is copied from the
              * new page to the existing page. Can take one of these values:
              * 
-             *     "replace" - from replaces to[0].
-             *     "replaceChildren" - from[0]'s children replace to[0]'s children.
-             *     "inject" - from replaces to[0]'s children.
-             *     "append" - from is inserted after to[0]'s children.'
-             *     "prepend" - from is inserted before to[0]'s children.
+             *     "replace" - content replaces target.
+             *     "replaceChildren" - content's children replace target's children.
+             *     "inject" - content replaces target's children.
+             *     "append" - content is inserted after target's children.'
+             *     "prepend" - content is inserted before target's children.
              *
-             * Where from/to is the set of elements matching the from/to selectors below. Defaults to "replace".
+             * Where content/target is the set of elements matching the content/target selectors below. Defaults to "replace".
              */
             mode: 'replace',
 
             /*
              * A jQuery selector which determines where in the newly-loaded
-             * DOM to get the content from. Defaults to 'body'.
+             * DOM to get the content. Defaults to 'body'.
              */
-            from: 'body',
+            content: 'body',
 
             /*
              * A jQuery selector which determines where in the existing
              * DOM the new content will go. Defaults to 'body'.
              */
-            to: 'body',
+            target: 'body',
 
             /*
              * Callback to run once the DOM has been loaded and inserted
@@ -401,7 +401,7 @@ THE SOFTWARE.
                 if (err) {
                     args.onerror.call(ctx, err, url);
                 } else {
-                    _load($(doc).find(args.from), $(args.to).eq(0), args.mode);
+                    _load($(doc).find(args.content), $(args.target).eq(0), args.mode);
                     if (args.updateTitle) {
                         document.title = doc.title;
                     }
@@ -415,32 +415,32 @@ THE SOFTWARE.
 
         /*
          * Function to load DOM on the page, and also bind freeloader specs.
-         * Usage: freeloader.load(from, to, mode);
-         * @param from - elements to load content from. can be anything that goes in $(...)
-         * @param to - elements to load content into. can be anything that goes in $(...)
+         * Usage: freeloader.load(content, target, mode);
+         * @param content - elements to extract. can be anything that goes in $(...)
+         * @param target - elements to load content into. can be anything that goes in $(...)
          * @param mode - how to transfer the content. follows same rules as above.
          */
-        var _load = function(from, to, mode){
-            var $to = $(to).eq(0);
-            var $from = $(from);
+        var _load = function(content, target, mode){
+            var $target = $(target).eq(0);
+            var $content = $(content);
             if (mode === 'replaceChildren') {
-                $from = $from.children();
-                $from.remove();
-                $to.html($from);
+                $content = $content.children();
+                $content.remove();
+                $target.html($content);
             } else if (mode === 'inject') {
-                $from.remove();
-                $to.html($from);
+                $content.remove();
+                $target.html($content);
             } else if (mode === 'prepend') {
-                $from.remove();
-                $to.prepend($from);
+                $content.remove();
+                $target.prepend($content);
             } else if (mode === 'append') {
-                $from.remove();
-                $to.append($from);
+                $content.remove();
+                $target.append($content);
             } else { // replace
-                $from.remove();
-                $to.replaceWith($from);
+                $content.remove();
+                $target.replaceWith($content);
             }
-            $from.freeloader();
+            $content.freeloader();
         };
 
         /*
