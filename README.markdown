@@ -14,11 +14,11 @@
 Bind the given controller to all DOM nodes matching the given selector. `controller` becomes the prototype for a controller class, instances of which are bound to DOM nodes on the fly by freeloader. From a garbage-collection perspective, these instances are only reachable through the DOM, and thus are free to be garbage collected as sections of DOM are overwritten. The binding happens on DOM ready, and whenever you load new content into the page using `freeloader.navigate()` (see below), or whenever you tell freeloader to explicitly check for unbound nodes using the `freeloader()` jQuery plugin (see below).
 
     freeloader.bind('.foo #bar', {
-      initialize:    <function> // (optional) Run when element first appears in the DOM.
-      events:        <object>   // (optional) Delegate events on the element.
-      subscriptions: <object>   // (optional) Subscribe to global events.
-      myProperty1:   <anything>
-      myProperty2:   <anything>
+      initialize:    function // (optional) Run when element first appears in the DOM.
+      events:        object   // (optional) Delegate events on the element.
+      subscriptions: object   // (optional) Subscribe to global events.
+      myProperty1:   anything
+      myProperty2:   anything
       ...
     });
 
@@ -108,7 +108,7 @@ Which is better than doing the following:
 
 ...which would add a new event handler to the window object for each bound element. If these handlers weren't removed manually, they'd accumulate and tie up system resources, causing memory leaks and unnecessary CPU load long after they disappeared from the live DOM. Freeloader's messaging system avoids this issue using a form of lazy event binding.
 
-### Examples of global events that individual controllers might be interested in subscribing to:
+Examples of global events that individual controllers might be interested in subscribing to:
 
  * Window resize
  * Orientation change on mobile devices
