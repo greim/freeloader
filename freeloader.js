@@ -73,7 +73,7 @@ THE SOFTWARE.
         var _tag = '__fl' + _uString();
 
         /*
-         * This function matches behavioral specs to DOM elements.
+         * This function finds unbound elements and binds them.
          */
         function _scan(cb, root){
             root = root || _docEl;
@@ -84,6 +84,7 @@ THE SOFTWARE.
                     var el = $list[j];
                     if (el[_tag] === undefined){
                         var tag = el[_tag] = {};
+                        $(el).addClass(_tag);
                     }
                     if (!el[_tag].hasOwnProperty(Spec.id)){
                         el[_tag][Spec.id] = new Spec(el);
@@ -92,6 +93,40 @@ THE SOFTWARE.
                 }
             }
         }
+
+        /*
+         * This is a way to revisit every bound element as quickly as possible.
+         * It works faster on newer browsers since we can just grab the live
+         * node list once and iterate it whenever we need. On older browsers
+         * it falls back to slower methods.
+         */
+        var _getBound = (function(){
+            var byClass = (function(){
+                var lists = {};
+                var hasGEBCN = typeof _docEl.getElementsByClassName === 'function';
+                var hasQSA = typeof _docEl.querySelectorAll === 'function';
+                if (hasGEBCN) {
+                    return function(className){
+                        var list = lists[className];
+                        if (!list) {
+                            list = lists[className] = _docEl.getElementsByClassName(className);
+                        }
+                        return list;
+                    };
+                } else if (hasQSA) {
+                    return function(className){
+                        return _docEl.querySelectorAll('.'+className);
+                    };
+                } else {
+                    return function(className){
+                        return $('.'+className).toArray();
+                    };
+                }
+            })();
+            return function(){
+                return byClass(_tag);
+            };
+        })();
 
         /*
          * Scan the document on DOM ready.
@@ -182,7 +217,7 @@ THE SOFTWARE.
              * Convenience $.find() on the DOM subtree.
              */
             $: function(){
-                return $.find.apply(this.$el, arguments);
+                return this.$el.find.apply(this.$el, arguments);
             }
         };
 
@@ -225,11 +260,15 @@ THE SOFTWARE.
          */
         _freeloader.publish = function(name){
             var pubArgs = arguments;
-            _scan(function(el){
-                _iterateObj(el[_tag], function(id, instance){
-                    instance.publish.apply(instance, pubArgs);
-                });
-            });
+            var boundElements = _getBound(name);
+            for (var i=0, len=boundElements.length; i<len; i++){
+                var tag = boundElements[i][_tag];
+                for (var id in tag) {
+                    if (tag.hasOwnProperty(id)) {
+                        tag[id].publish.apply(instance, pubArgs);
+                    }
+                }
+            }
         };
 
         /*
@@ -303,6 +342,9 @@ THE SOFTWARE.
          */
         function Args(args){
             $.extend(this, args);
+            if (!this.content) {
+                this.content = this.target;
+            }
         };
 
         Args.prototype = {
@@ -311,21 +353,21 @@ THE SOFTWARE.
              * String parameter controlling how content is copied from the
              * new page to the existing page. Can take one of these values:
              * 
-             *     "replace" - content replaces target.
-             *     "replaceChildren" - content's children replace target's children.
-             *     "inject" - content replaces target's children.
-             *     "append" - content is inserted after target's children.'
-             *     "prepend" - content is inserted before target's children.
+             *     "replaceRoot" - content replaces target.
+             *     "replace" - content's children replace target's children.
+             *     "prepend" - content's children are inserted before target's children.
+             *     "append" - content's children are inserted after target's children.
              *
-             * Where content/target is the set of elements matching the content/target selectors below. Defaults to "replace".
+             * Where content/target is the set of elements matching the
+             * content/target selectors below. Defaults to "replaceRoot".
              */
             mode: 'replace',
 
             /*
              * A jQuery selector which determines where in the newly-loaded
-             * DOM to get the content. Defaults to 'body'.
+             * DOM to get the content. Defaults to the same value set in target.
              */
-            content: 'body',
+            content: null,
 
             /*
              * A jQuery selector which determines where in the existing
@@ -423,20 +465,19 @@ THE SOFTWARE.
         var _load = function(content, target, mode){
             var $target = $(target).eq(0);
             var $content = $(content);
-            if (mode === 'replaceChildren') {
+            if (mode === 'replace') {
                 $content = $content.children();
                 $content.remove();
                 $target.html($content);
-            } else if (mode === 'inject') {
-                $content.remove();
-                $target.html($content);
             } else if (mode === 'prepend') {
+                $content = $content.children();
                 $content.remove();
                 $target.prepend($content);
             } else if (mode === 'append') {
+                $content = $content.children();
                 $content.remove();
                 $target.append($content);
-            } else { // replace
+            } else { // replaceRoot
                 $content.remove();
                 $target.replaceWith($content);
             }

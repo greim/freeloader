@@ -11,7 +11,7 @@
 
 ## Usage `freeloader.bind(selector, controller)`
 
-Bind the given controller to all DOM nodes matching the given selector. `controller` becomes the prototype for a controller class, instances of which are bound to DOM nodes on the fly by freeloader. From a garbage-collection perspective, these instances are only reachable through the DOM, and thus are free to be garbage collected as sections of DOM are overwritten. The binding happens on DOM ready, and whenever you load new content into the page using `freeloader.navigate()` (see below), or whenever you tell freeloader to explicitly check for unbound nodes using the `freeloader()` jQuery plugin (see below).
+Bind the given controller to all DOM nodes matching the given selector. `controller` becomes the prototype for a controller class, instances of which are bound to DOM nodes on the fly by freeloader. From a garbage-collection perspective, these instances are only reachable through the DOM, and thus are free to be garbage collected as sections of DOM are overwritten. The binding happens on DOM ready, and whenever you load new content into the page using `freeloader.navigate()` (see below), or whenever you tell freeloader to explicitly check for unbound nodes using the `freeloader()` jQuery plugin included as part of this library (see below).
 
     freeloader.bind('.foo #bar', {
       initialize:    function // (optional) Run when element first appears in the DOM.
@@ -39,14 +39,13 @@ The similarities between freeloader controllers and Backbone views are intention
 The `initialize` method works like this:
 
     freeloader.bind('.foo #bar', {
-      ...
       initialize: function() {
         this.$el.is('.foo #bar') === true
         $.contains(document.documentElement, this.el) === true
         // `this` is a controller instance
-        // `this.el` is the instance element
-        // `this.$el` is a jQuery object wrapping the instance element
-        // `this.$` is shorthand for `this.$el.find`
+        // `this.el` is the bound element
+        // `this.$el` is a jQuery object wrapping the bound element
+        // `this.$` is an alias to `this.$el.find`
       }
       ...
     });
@@ -54,7 +53,6 @@ The `initialize` method works like this:
 The events object works like this:
 
     freeloader.bind('.foo #bar', {
-      ...
       events: {
         'event selector': 'method' // delegate event on the element for selector
         'event': 'method'          // listen for event directly on element (no delegation)
@@ -65,7 +63,6 @@ The events object works like this:
 Subscriptions objects work like this:
 
     freeloader.bind('.foo #bar', {
-      ...
       subscriptions: {
         'type': 'method' // call method when there's a message of type type
       }
@@ -77,13 +74,10 @@ Subscriptions objects work like this:
 freeloader provides a means of loosely-coupled, top-down messaging, allowing global events to broadcast commands to controller instances that are live in the document.
 
     freeloader.bind('.foo #bar', {
-      ...
       subscriptions: {
         resize: 'adjustFit'
       },
-      adjustFit: function(){
-        ...
-      }
+      adjustFit: function(){ ... }
       ...
     });
 
@@ -95,8 +89,8 @@ freeloader provides a means of loosely-coupled, top-down messaging, allowing glo
 
 Which is better than doing the following:
 
+    // bad!
     freeloader.bind('.foo #bar', {
-      ...
       init: function(){
         var self = this;
         $(window).on('resize', function(){
@@ -117,6 +111,8 @@ Examples of global events that individual controllers might be interested in sub
  * Local storage updates
  * History API pops and pushes
  * Page visibility change
+ * Window focus/blur
+ * Window scroll
  * Off-element clicks to close a dialog
 
 ## Usage `freeloader.navigate(url, options)`
@@ -124,20 +120,33 @@ Examples of global events that individual controllers might be interested in sub
 Navigate to a new page, without refreshing the page, using ajax and the history API. Freeloader automatically checks the new content for unbound nodes and binds them. The options object looks like this:
 
     freeloader.navigate('/my/page', {
-        content: string      // selects which part of new page to extract and insert into existing page. default: 'body'
-        target: string       // selects which part of existing page to receive new content. default: 'body'
+        target: string       // selects part of existing page to receive new content. default: 'body'
+        content: string      // selects part of new page to extract and insert into existing page. default: same as target
         mode: string         // determines how to update the page
-                             //     "replace"         - $(content) replaces $(target). (default)
-                             //     "replaceChildren" - $(content)'s children replace $(target)'s children.
-                             //     "inject"          - $(content) replaces $(target)'s children.
-                             //     "append"          - $(content) is inserted after $(target)'s children.
-                             //     "prepend"         - $(content) is inserted before $(target)'s children.
+                             //     "replaceRoot" - $(content) replaces $(target). (default)
+                             //     "replace"     - $(content)'s children replace $(target)'s children.
+                             //     "prepend"     - $(content)'s children are inserted before $(target)'s children.
+                             //     "append"      - $(content)'s children are inserted after $(target)'s children.
         scrollToTop: boolean // whether to scroll to top. default: true
         updateTitle: boolean // whether to update document.title. default: true
         pushState: boolean   // whether to update url using history API. default: true
         pushStateFallback: function // what to do in old browsers. default: refresh browser to new page
         onload: function     // what to do when fetch succeeds and page is updated. default: nothing
         onerror: function    // what to do if page fetch fails. default: navigate to url
+    });
+
+For example, to navigate to a new page, do:
+
+    freeloader.navigate('/photos');
+
+To implement an infinite scroll, do:
+
+    freeloader.navigate('/photos?page=2', {
+      target: '#photos',
+      mode: 'append',
+      scrollToTop: false,
+      updateTitle: false,
+      pushState: false
     });
 
 ## Usage `$(anything).freeloader()`
