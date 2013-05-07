@@ -158,13 +158,4 @@ To automatically add content as the user scrolls, do:
 
 This is a helper jQuery plugin to explicitly tell freeloader to check a given section of the DOM for unbound elements. You don't need to do this when you do `freeloader.navigate()`, however if you load new content into the page by some other means, you'll need to do this. This method is [idempotent](http://en.wikipedia.org/wiki/Idempotence), so calling it multiple times has no adverse affect other than using up a few extra CPU cycles. Warning: only call this on live DOM nodes, otherwise it will puke.
 
-# Freeloader Philosophy
-
-Freeloader provides a set of client-side abstractions for building complex webapps where page rendering happens mainly on the server. 
-
-
-
-
-
-
 
