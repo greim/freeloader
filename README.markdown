@@ -43,11 +43,12 @@ The `initialize` method works like this:
     freeloader.bind('.foo #bar', {
       ...
       initialize: function() {
+        this.$el.is('.foo #bar') === true
+        $.contains(document.documentElement, this.el) === true
         // `this` is a controller instance
         // `this.el` is the instance element
         // `this.$el` is a jQuery object wrapping the instance element
         // `this.$` is shorthand for `this.$el.find`
-        $.contains(document.documentElement, this.el) === true
       }
       ...
     });
@@ -140,7 +141,7 @@ Navigate to a new page, without refreshing the page, using ajax and the history 
 
 ## Usage `$(anything).freeloader()`
 
-This is a helper jQuery plugin to explicitly tell freeloader to check a given section of the DOM for unbound elements. You don't need to do this when you do `freeloader.navigate()`, however if you load new content into the page by some other means, you'll need to do this. This method is [idempotent](http://en.wikipedia.org/wiki/Idempotence), so calling it multiple times has no adverse affect other than using up a few extra CPU cycles.
+This is a helper jQuery plugin to explicitly tell freeloader to check a given section of the DOM for unbound elements. You don't need to do this when you do `freeloader.navigate()`, however if you load new content into the page by some other means, you'll need to do this. This method is [idempotent](http://en.wikipedia.org/wiki/Idempotence), so calling it multiple times has no adverse affect other than using up a few extra CPU cycles. Warning: only call this on live DOM nodes, otherwise it will puke.
 
 # Freeloader Philosophy
 
