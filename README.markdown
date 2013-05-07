@@ -11,7 +11,7 @@
 
 ## Usage `freeloader.bind(selector, controller)`
 
-Create a controller for all DOM nodes matching the given selector. `controller` becomes the prototype for controller instances that are bound to DOM nodes on the fly by freeloader. From a garbage-collection perspective, these instances are only reachable through the DOM, and thus are free to be garbage collected as soon as the DOM nodes they're bound to go away. The binding happens on DOM ready, and whenever you load new content into the page using freeloader, or whenever you tell freeloader to explicitly check for unbound nodes using the `freeloader()` jQuery plugin.
+Bind the given controller to all DOM nodes matching the given selector. `controller` becomes the prototype for a controller class, instances of which are bound to DOM nodes on the fly by freeloader. From a garbage-collection perspective, these instances are only reachable through the DOM, and thus are free to be garbage collected as sections of DOM are overwritten. The binding happens on DOM ready, and whenever you load new content into the page using `freeloader.navigate()` (see below), or whenever you tell freeloader to explicitly check for unbound nodes using the `freeloader()` jQuery plugin (see below).
 
     freeloader.bind('.foo #bar', {
       initialize:    <function> // (optional) Run when element first appears in the DOM.
@@ -119,7 +119,7 @@ Using this latter approach would add a new event handler to the window object fo
 
 ## Usage `freeloader.navigate(url, options)`
 
-Navigate to a new page without refreshing the page using ajax and history API. The options object looks like this:
+Navigate to a new page without refreshing the page using ajax and history API. Freeloader checks the new content for unbound nodes and binds them. The options object looks like this:
 
     freeloader.navigate('page.html', {
         from: string                // selects which part of new page to extract and insert into existing page. default: 'body'
@@ -141,5 +141,5 @@ Navigate to a new page without refreshing the page using ajax and history API. T
 
 ## Usage `$(anything).freeloader()`
 
-This is a helper jQuery plugin to explicitly tell freeloader to check a given section of the DOM for unbound elements. You don't need to do this when you do `freeloader.navigate()`, however if you load new content into the page by some other means, you'll need to do this. This method is idempotent, so calling it multiple times has no adverse affect other than using up CPU cycles.
+This is a helper jQuery plugin to explicitly tell freeloader to check a given section of the DOM for unbound elements. You don't need to do this when you do `freeloader.navigate()`, however if you load new content into the page by some other means, you'll need to do this. This method is [idempotent](http://en.wikipedia.org/wiki/Idempotence), so calling it multiple times has no adverse affect other than using up a few extra CPU cycles.
 
