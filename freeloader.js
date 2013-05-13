@@ -340,173 +340,34 @@ THE SOFTWARE.
         /*
          * A function that fetches a page and passes a
          * document object to the callback.
+         * 
+         *     freeloader.load('/page.html', {
+         *         data: { foo: 'bar' }, // sends ?foo=bar (optional)
+         *         success: function(doc) { ... }, // operate on the returned document object
+         *         error: function() { ... } // handle an error
+         *     });
          */
-        function getUrl(url, callback){
-            $.ajax(url, {
+        _freeloader.load = function(url, args){
+            args = args || {};
+            var newArgs = $.extend({}, args, {
                 type: 'GET',
                 dataType: 'html',
+                data: args.data,
                 success: function(html){
-                    var doc = _parseDocument(html);
-                    callback(null, doc);
-                },
-                error: function(xhr, status, message){
-                    callback(new Error(message));
-                }
-            });
-        };
-
-        /*
-         * Args class with default properties for customizing navigate actions.
-         */
-        function Args(args){
-            $.extend(this, args);
-            if (!this.content) {
-                this.content = this.target;
-            }
-        };
-
-        Args.prototype = {
-
-            /*
-             * String parameter controlling how content is copied from the
-             * new page to the existing page.
-             */
-            mode: 'replace',
-
-            /*
-             * A jQuery selector which determines where in the newly-loaded
-             * DOM to get the content. Defaults to the same value set in target.
-             */
-            content: null,
-
-            /*
-             * A jQuery selector which determines where in the existing
-             * DOM the new content will go. Defaults to 'body'.
-             */
-            target: 'body',
-
-            /*
-             * Callback to run once the DOM has been loaded and inserted
-             * into the DOM. Optional.
-             */
-            onload: function(){},
-
-            /*
-             * Callback to run if there's an error fetching the page. Optional.
-             */
-            onerror: function(error, url){
-                location.href = url;
-            },
-
-            /*
-             * Whether the page should be scrolled to top once the content
-             * has been loaded. Defaults to true.
-             */
-            scrollToTop: true,
-
-            /*
-             * Whether the page title should be updated once the content
-             * has been loaded. Defaults to true.
-             */
-            updateTitle: true,
-
-            /*
-             * Whether the URL will be updated using the history API. Defaults
-             * to true.
-             */
-            pushState: true,
-
-            /*
-             * Function to handle cases where the history API isn't supported
-             * in the user's browser. Explicitly returning false from this
-             * function prevents the operation from proceeding. The default
-             * behavior is to set window.location.href = url and then return
-             * false.
-             */
-            pushStateFallback: function(url){
-                location.href = url;
-                return false;
-            }
-        };
-
-        /*
-         * Navigate to a new page, but instead of refreshing the whole page,
-         * do an ajax fetch and update specific parts of the DOM. This avoids
-         * the overhead of reloading JS and CSS, and otherwise rebuilding the
-         * overall window environment. This also automatically binds freeloader
-         * specs to appropriate elements.
-         */
-        var _hasPushState = window.history && window.history.pushState;
-        _freeloader.navigate = function(url, args, ctx){
-            args = new Args(args);
-            if (args.pushState) {
-                if (!_hasPushState) {
-                    var res = args.pushStateFallback(url);
-                    if (res !== undefined && !res) {
+                    if (typeof args.success !== 'function') {
                         return;
                     }
-                } else {
-                    window.pushState(url);
-                }
-            }
-            getUrl(url, function(err, doc){
-                if (err) {
-                    args.onerror.call(ctx, err, url);
-                } else {
-                    _load($(doc).find(args.content), $(args.target).eq(0), args.mode);
-                    if (args.updateTitle) {
-                        document.title = doc.title;
+                    var doc = _parseDocument(html);
+                    args.success.call(args.context, doc);
+                },
+                error: function(xhr, status, message){
+                    if (typeof args.error !== 'function') {
+                        return;
                     }
-                    if (args.scroll) {
-                        window.scrollTo(0,0);
-                    }
-                    args.onload.call(ctx);
+                    args.error.apply(args.context, arguments);
                 }
             });
-        };
-
-        /*
-         * Function to load DOM on the page, and also bind freeloader specs.
-         * Usage: freeloader.load(content, target, mode);
-         * @param content - elements to extract. can be anything that goes in $(...)
-         * @param target - elements to load content into. can be anything that goes in $(...)
-         * @param mode - how to transfer the content. follows same rules as above.
-         */
-        var _load = function(content, target, mode){
-            var $target = $(target).eq(0);
-            var $content = $(content);
-            if (mode === 'fill') {
-                $content = $content.children();
-                $content.remove();
-                $target.html($content);
-            } else if (mode === 'prepend') {
-                $content = $content.children();
-                $content.remove();
-                $target.prepend($content);
-            } else if (mode === 'append') {
-                $content = $content.children();
-                $content.remove();
-                $target.append($content);
-            } else if (mode === 'fillInto') {
-                $content.remove();
-                $target.html($content);
-            } else if (mode === 'prependInto') {
-                $content.remove();
-                $target.prepend($content);
-            } else if (mode === 'appendInto') {
-                $content.remove();
-                $target.append($content);
-            } else if (mode === 'before') {
-                $content.remove();
-                $target.before($content);
-            } else if (mode === 'after') {
-                $content.remove();
-                $target.after($content);
-            } else { // replaceRoot
-                $content.remove();
-                $target.replaceWith($content);
-            }
-            $content.freeloader();
+            $.ajax(url, newArgs);
         };
 
         /*

@@ -115,47 +115,29 @@ Examples of global events that individual controllers might be interested in sub
  * Window scroll
  * Off-element clicks to close a dialog
 
-## Usage `freeloader.navigate(url, options)`
+## Usage `freeloader.load(url, options)`
 
-Navigate to a new page, without refreshing the page, using ajax and the history API. Freeloader automatically checks the new content for unbound nodes and binds them. The options object looks like this:
+Load a page using ajax and process the result as a new Document object, not attached to the DOM.
 
-    freeloader.navigate('/my/page', {
-        target: string       // selects part of existing page to receive new content. default: 'body'
-        content: string      // selects part of new page to extract and insert into existing page. default: same as target
-        mode: string         // determines how to update the page
-                             //     "replace"     - content replaces target. (default)
-                             //     "before"      - content is inserted before target.
-                             //     "after"       - content is inserted after target.
-                             //     "fill"        - content's children replace target's children.
-                             //     "prepend"     - content's children are inserted before target's children.
-                             //     "append"      - content's children are inserted after target's children.
-                             //     "fillInto"    - content replaces target's children.
-                             //     "prependInto" - content is inserted before target's children.
-                             //     "appendInto"  - content is inserted after target's children.
-        scrollToTop: boolean // whether to scroll to top. default: true
-        updateTitle: boolean // whether to update document.title. default: true
-        pushState: boolean   // whether to update url using history API. default: true
-        pushStateFallback: function // what to do in old browsers. default: refresh browser to new page
-        onload: function     // what to do when fetch succeeds and page is updated. default: nothing
-        onerror: function    // what to do if page fetch fails. default: navigate to url
+    freeloader.load('/my/page.html', {
+        data: object         // if present, used to build a query string (optional)
+        success: function    // what to do in case of success
+        error: function      // what to do in case of error
+        context: anything    // this in success and error functions (optional)
     });
 
-For example, to navigate to a new page, do:
+To implement an in-page append, do:
 
-    freeloader.navigate('/photos');
-
-To automatically add content as the user scrolls, do:
-
-    freeloader.navigate('/photos?page=2', {
-      target: '#photos',
-      mode: 'append',
-      scrollToTop: false,
-      updateTitle: false,
-      pushState: false
+    freeloader.load('/photos?page=2', {
+      success: function(doc){
+        var appendMe = $(doc).find('#content').children().remove();
+        $('#content').append(appendMe);
+      }
     });
 
 ## Usage `$(anything).freeloader()`
 
-This is a helper jQuery plugin to explicitly tell freeloader to check a given section of the DOM for unbound elements. You don't need to do this when you do `freeloader.navigate()`, however if you load new content into the page by some other means, you'll need to do this. This method is [idempotent](http://en.wikipedia.org/wiki/Idempotence), so calling it multiple times has no adverse affect other than using up a few extra CPU cycles. Warning: only call this on live DOM nodes, otherwise it will puke.
+This is a helper jQuery plugin to explicitly tell freeloader to check a given section of the DOM for unbound elements. If you load new content into the page, for example using client-side templates, you'll need to do this. This method is [idempotent](http://en.wikipedia.org/wiki/Idempotence), so calling it multiple times has no adverse affect other than using up a few extra CPU cycles. Warning: only call this on live DOM nodes, otherwise it will puke.
+
 
 
