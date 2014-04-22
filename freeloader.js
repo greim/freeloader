@@ -20,22 +20,218 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-(function(window){
+(function(){
+
+  /**
+   * Control a DOM subtree. Has various event routers:
+   *
+   *  - events: DOM event delegation
+   *  - subs: app-wide subscriptions
+   *  - above: incoming messages from higher-tree nodes
+   *  - below: incoming messages from lower-tree nodes
+   *
+   * And also corresponding ways to trigger such events:
+   *
+   *  - this.publish: publish an app-wide event
+   *  - this.up: send a message up the DOM tree
+   *  - this.publish: send a message down the DOM tree
+   *  - DOM events are triggered by user
+   *
+   * Don't instantiate controllers manually. It will be
+   * done automatically at DOM ready and as you use this.html()
+   * (and friends) from within controllers.
+   */
+  function Controller(el, app){
+    var $el = $(el);
+    this.el = el;
+    this.$el = $el;
+    this._app = app;
+    _.each(this.events, function(action, key){
+      var matches = key.match(/^\s*(\S+)(\s+(.+))?$/i);
+      if (!matches) {
+        return;
+      }
+      var eventType = matches[1];
+      var selector = matches[3];
+      var handler = _.bind(function(ev){
+        this[action].apply(this, arguments);
+      }, this);
+      if (selector) {
+        // use delegation
+        $el.on(eventType, selector, handler);
+      } else {
+        // don't use delegation
+        $el.on(eventType, handler);
+      }
+    }, this);
+    this.init();
+  }
 
   /*
-   * If AMD is available, use it, otherwise make freeloader a
-   * global variable. This library only runs in browsers.
+   * Taken nearly verbatim from Backbone.
    */
-  var isAmd = typeof window.define === "function" && window.define.amd;
-  var define = isAmd ? window.define : function(list, cb){
-    window.freeloader = cb(jQuery, _);
+  Controller.extend = function(protoProps, staticProps) {
+    var parent = this;
+    var child;
+    if (protoProps && _.has(protoProps, 'constructor')) {
+      child = protoProps.constructor;
+    } else {
+      child = function(){ return parent.apply(this, arguments); };
+    }
+    _.extend(child, parent, staticProps);
+    var Surrogate = function(){ this.constructor = child; };
+    Surrogate.prototype = parent.prototype;
+    child.prototype = new Surrogate;
+    if (protoProps) _.extend(child.prototype, protoProps);
+    child.__super__ = parent.prototype;
+    return child;
   };
 
-  /*
-   * By convention, variables local to this define callback
-   * are prepended by _underscores.
+  Controller.prototype = {
+
+    /*
+     * This can be overridden.
+     */
+    init: _noop,
+
+    /*
+     * Overwrite the content of this DOM subtree.
+     */
+    html: function(content){
+      this.$el.html(content);
+      this.scan();
+    },
+
+    /*
+     * Append to the content of this DOM subtree.
+     */
+    append: function(content){
+      this.$el.append(content);
+      this.scan();
+    },
+
+    /*
+     * Prepend to the content of this DOM subtree.
+     */
+    prepend: function(content){
+      this.$el.prepend(content);
+      this.scan();
+    },
+
+    /*
+     * If the DOM subtree has been modified,
+     * check for unbound elements.
+     */
+    scan: function(){
+      this._app.scan(this.el);
+    },
+
+    /*
+     * Publish an event from this view.
+     */
+    publish: function(name){
+      var args = _slice(arguments);
+      args[0] = {
+        name: name,
+        source: this
+      };
+      return this._app.publish.apply(this._app, args);
+    },
+
+    /*
+     * Send a message up the DOM tree.
+     * Will be handled by any matching handlers
+     * in 'below' handlers on controllers.
+     */
+    up: function(){
+      this._comm(false, arguments);
+    },
+
+    /*
+     * Send a message down the DOM tree.
+     * Will be handled by any matching handlers
+     * in 'above' handlers on controllers.
+     */
+    down: function(){
+      this._comm(true, arguments);
+    },
+
+    /*
+     * Helper method to support up and down.
+     */
+    _comm: function(isDown, args){
+      args = _slice(args);
+      var name = args[0];
+      args[0] = {
+        name: name,
+        source: this
+      };
+      var $els = isDown
+        ? this.$('.' + _tagClass)
+        : this.$el.parents('.' + _tagClass);
+      $els.each(function(){
+        var el = this;
+        _.each(el[_tag], function(that){
+          var handlers = that[isDown ? 'above' : 'below'];
+          if (!handlers){
+            return;
+          } else {
+            if (handlers.hasOwnProperty(name)){
+              handlers[name].apply(that, args);
+            }
+          }
+        }, this);
+        el = el.parentNode;
+      });
+    },
+
+    /*
+     * Convenience $el.find() on DOM subtree.
+     */
+    $: function(){
+      return this.$el.find.apply(this.$el, arguments);
+    }
+  };
+
+  // ########################################################################
+
+
+  /**
+   * Main export from this library. Use it to create an "app".
+   *
+   * var freeloader = require('freeloader');
+   * var app = freeloader();
+   * app.bind('div.foo', { ... });
    */
-  define(['jquery','lodash'], function($){
+  module.exports = function(_options){
+
+    /*
+     * By convention, variables local to this function
+     * are prepended by _underscores.
+     */
+
+    _options = _.extend({
+      prefix: '__fl_'
+    }, _options);
+
+    _errors = {
+      xxx: function(err){
+        alert(err.message);
+      }
+    };
+    function _doError(err){
+      var xxx = 'xxx';
+      var status = err.status === undefined ? '' : err.status + '';
+      if (status.length > 3 || /\D/.test(status)) status = 'xxx';
+      while (status.length < 3) status = '0' + status;
+      for (var i=0; i<4; i++){
+        var key = status.substring(0,3-i) + xxx.substring(3-i, 3);
+        if (_errors.hasOwnProperty(key)){
+          _errors[key](err);
+          return;
+        }
+      }
+    }
 
     var _loaded = false;
     $(function(){
@@ -43,7 +239,9 @@ THE SOFTWARE.
         _loaded = true;
       },0);
     });
+
     var _docEl = document.documentElement;
+
     var _slice = [].slice;
 
     /*
@@ -74,7 +272,8 @@ THE SOFTWARE.
      * name so it knows which nodes it has seen and
      * which it hasn't.
      */
-    var _tag = '__fl_' + ((Math.random()+'').replace(/.*(\d\d\d\d\d\d)$/,'$1'));
+    var _tag = _options.prefix + ((Math.random()+'').replace(/.*(\d\d\d\d\d\d)$/,'$1'));
+    var _tagClass = _options.prefix + '_bound';
 
     /*
      * Converts an arbitrary string into a valid HTML className.
@@ -85,7 +284,7 @@ THE SOFTWARE.
       var patt = /[^a-z0-9_-]/ig;
       return function(name) {
         name = name.replace(patt, '_');
-        return _tag + 'subscribes_' + name;
+        return _options.prefix + 'subscribes_' + name;
       };
     })();
 
@@ -100,13 +299,16 @@ THE SOFTWARE.
         for (var j=0, lenj=$list.length; j<lenj; j++){
           var el = $list[j];
           if (el[_tag] === undefined){
+            var $el = $(el);
             var tag = el[_tag] = {};
+            $el.addClass(_tagClass);
             _.each(binding.Controller.prototype.subs, function(val, name){
-              $(el).addClass(_toSubsClassName(name));
+              $el.addClass(_toSubsClassName(name));
             });
           }
           if (!el[_tag].hasOwnProperty(binding.id)){
-            el[_tag][binding.id] = new Controller(el);
+            var controller = new binding.Controller(el, _app);
+            el[_tag][binding.id] = controller;
           }
           cb && cb(el);
         }
@@ -159,117 +361,6 @@ THE SOFTWARE.
     // ########################################################################
 
     /*
-     * This is a superclass that all controller classes will
-     * extend. Descendant instances will be 'this' in all
-     * controller methods, having el, $el, and $ properties.
-     */
-    function Controller(el){
-      var $el = $(el);
-      this.el = el;
-      this.$el = $el;
-      _.each(this.events, function(action, key){
-        var matches = key.match(/^\s*(\S+)(\s+(.+))?$/i);
-        if (!matches) {
-          return;
-        }
-        var eventType = matches[1];
-        var selector = matches[3];
-        var handler = _.bind(function(ev){
-          this[action].apply(this, arguments);
-        }, this);
-        if (selector) {
-          // use delegation
-          $el.on(eventType, selector, handler);
-        } else {
-          // don't use delegation
-          $el.on(eventType, handler);
-        }
-      }, this);
-      this.init();
-    }
-
-    /*
-     * This function's job is to keep the prototype
-     * chain intact.
-     */
-    Controller.extend = function(protoProps, staticProps) {
-      var parent = this;
-      var child;
-      if (protoProps && _.has(protoProps, 'constructor')) {
-        child = protoProps.constructor;
-      } else {
-        child = function(){ return parent.apply(this, arguments); };
-      }
-      _.extend(child, parent, staticProps);
-      var Surrogate = function(){ this.constructor = child; };
-      Surrogate.prototype = parent.prototype;
-      child.prototype = new Surrogate;
-      if (protoProps) _.extend(child.prototype, protoProps);
-      child.__super__ = parent.prototype;
-      return child;
-    };
-
-    Controller.prototype = {
-
-      /*
-       * This can be overridden.
-       */
-      init: _noop,
-
-      /*
-       * Overwrite the content of this DOM subtree.
-       */
-      html: function(content){
-        this.$el.html(content);
-        this.scan();
-      },
-
-      /*
-       * Append to the content of this DOM subtree.
-       */
-      append: function(content){
-        this.$el.append(content);
-        this.scan();
-      },
-
-      /*
-       * Prepend to the content of this DOM subtree.
-       */
-      prepend: function(content){
-        this.$el.prepend(content);
-        this.scan();
-      },
-
-      /*
-       * Publish an event from this view.
-       */
-      publish: function(name){
-        var args = _slice(arguments);
-        args[0] = {
-          name: name,
-          source: this
-        };
-        return _freeloader.publish.apply(freeloader, args);
-      },
-
-      /*
-       * If the DOM subtree has been modified, check for unbound elements.
-       */
-      scan: function(){
-        _scan(this.el);
-      },
-
-      /*
-       * Convenience $.find() on the DOM subtree.
-       */
-      $: function(){
-        return this.$el.find.apply(this.$el, arguments);
-      }
-    };
-
-    // ########################################################################
-
-    /*
      * A function that takes a string of HTML and returns a document object.
      */
     var _parseDocument = (function(){
@@ -292,13 +383,15 @@ THE SOFTWARE.
        * Use createDocumentUsingParser if DOMParser is defined and natively
        * supports 'text/html' parsing (Firefox 12+, IE 10)
        * 
-       * Use createDocumentUsingDOM if createDocumentUsingParser throws an exception
-       * due to unsupported type 'text/html' (Firefox < 12, Opera)
+       * Use createDocumentUsingDOM if createDocumentUsingParser throws an
+       * exception due to unsupported type 'text/html' (Firefox < 12, Opera)
        * 
        * Use createDocumentUsingWrite if:
        *  - DOMParser isn't defined
-       *  - createDocumentUsingParser returns null due to unsupported type 'text/html' (Chrome, Safari)
-       *  - createDocumentUsingDOM doesn't create a valid HTML document (safeguarding against potential edge cases)
+       *  - createDocumentUsingParser returns null due to unsupported type
+       *    'text/html' (Chrome, Safari)
+       *  - createDocumentUsingDOM doesn't create a valid HTML document
+       *    (safeguarding against potential edge cases)
        */
       var parser;
       if (window.DOMParser) {
@@ -322,7 +415,7 @@ THE SOFTWARE.
       var body = doc.body;
       body.parentNode.removeChild(body);
       document.body = body;
-      _freeloader.scan(document.body);
+      _app.scan(document.body);
     }
 
     // ########################################################################
@@ -382,10 +475,26 @@ THE SOFTWARE.
     /*
      * The object to be exported.
      */
-    var _freeloader = {
+    var _app = {
 
       /**
-       * Bind a selector to a controller. Return the controller.
+       * Bind a selector to a controller.
+       * 
+       * // Example 1: basic controller
+       * var MyController = freeloader.Controller.extend({ ... });
+       * app.bind('div.foo', MyController)
+       * 
+       * // Example 2: shorthand for above if you don't need
+       * // to preserve a reference to MyController and don't
+       * // need to use inheritance. in which case .extend()
+       * // is called internally.
+       * app.bind('div.foo', { ... });
+       * 
+       * // Example 3: using inheritance
+       * var FooController = freeloader.Controller.extend({ ... });
+       * var FooBarController = FooController.extend({ ... });
+       * app.bind('div.foo', FooController)
+       * app.bind('div.foo.bar', FooBarController)
        */
       bind: function(selector, AController){
 
@@ -409,8 +518,6 @@ THE SOFTWARE.
         if (_loaded) {
           _scan();
         }
-
-        return AController;
       },
 
       /**
@@ -440,13 +547,13 @@ THE SOFTWARE.
        * A function that uses XHR to GET an HTML page and passes a
        * document object to the callback.
        * 
-       *     freeloader.load('/page.html', function(err, document){
-       *       if (err){
-       *         // handle the error
-       *       } else {
-       *         // do something with document
-       *       }
-       *     });
+       * freeloader.load('/page.html', function(err, document){
+       *   if (err){
+       *     // handle the error
+       *   } else {
+       *     // do something with document
+       *   }
+       * });
        */
       load: function(url, cb, ctx){
         args = args || {};
@@ -458,18 +565,38 @@ THE SOFTWARE.
             cb.call(ctx, null, doc);
           },
           error: function(xhr, status, message){
-            cb.call(ctx, new Error('Page fetch returned ' + status + ' for URL ' + url));
+            var err = new Error('Page fetch returned ' + status + ' for URL ' + url);
+            err.status = xhr.status;
+            cb.call(ctx, err);
           }
         });
       },
 
-      navigate: function(url, cb, ctx){
-        _freeloader.load(url, function(err, doc){
+      /**
+       * Go to a new page URL using XHR to quickly load the page.
+       */
+      navigate: function(url){
+        _app.load(url, function(err, doc){
           if (!err){
             updatePage(doc);
             _history.pushState({url:url}, url);
+          } else {
+            _doError(err);
           }
         });
+      },
+
+      /**
+       * By default all navigation errors leading to 404s are
+       * handled by one function. Set a custom function for 404,
+       * 4xx, 500, 5xx errors, etc.
+       */
+      setErrorPage: function(status, handler, ctx){
+        status = status+'';
+        if (status.length !== 3 || !/^\d*x*$/.test(status)){
+          throw new Error(status + ' is an invalid status code for error page');
+        }
+        _errors[status] = _.bind(handler, ctx);
       },
 
       scan: _scan,
@@ -483,9 +610,11 @@ THE SOFTWARE.
      */
     _history.onPopState(function(ev){
       var url = ev.state ? ev.state.url : location.pathname + location.search;
-      _freeloader.load(url, function(err, doc){
+      _app.load(url, function(err, doc){
         if (!err){
           updatePage(doc);
+        } else {
+          _doError(err);
         }
       });
     });
@@ -495,15 +624,6 @@ THE SOFTWARE.
     /*
      * Return from the define() call.
      */
-    return _freeloader;
-  });
-})(window);
-
-
-
-
-
-
-
-
-
+    return _app;
+  };
+})();
