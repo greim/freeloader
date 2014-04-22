@@ -140,27 +140,28 @@ Controller.prototype = {
    * Helper method to support up and down.
    */
   _comm: function(isDown, args){
-    args = _slice(args);
+    args = _slice.call(args);
     var type = args[0];
     args[0] = {
       type: type,
       source: this
     };
     var $els = isDown
-      ? this.$('.' + _tagClass)
-      : this.$el.parents('.' + _tagClass);
+      ? this.$('.' + this._tagClass)
+      : this.$el.parents('.' + this._tagClass);
+    var self = this;
     $els.each(function(){
       var el = this;
-      _.each(el[_tag], function(that){
+      _.each(el[self._tag], function(that){
         var handlers = that[isDown ? 'above' : 'below'];
         if (!handlers){
           return;
         } else {
           if (handlers.hasOwnProperty(type)){
-            handlers[type].apply(that, args);
+            that[handlers[type]].apply(that, args);
           }
         }
-      }, this);
+      });
       el = el.parentNode;
     });
   },
@@ -277,6 +278,8 @@ module.exports = function(_options){
           });
           var controller = new binding.Controller(el, _app);
           el[_tag][binding.id] = controller;
+          controller._tagClass = _tagClass;
+          controller._tag = _tag;
           controller.init();
         }
         cb && cb(el);

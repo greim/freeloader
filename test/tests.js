@@ -7,10 +7,19 @@ function assert(thing, message){
   if (!thing) throw new Error(message || 'failed assertion');
 }
 
+function cr(selId, content){
+  var id = selId.substring(1);
+  var div = document.createElement('div');
+  div.id = id;
+  div.innerHTML = content || '';
+  document.body.appendChild(div);
+  return selId;
+}
+
 describe('Controller', function(){
 
   it('should init without error', function(done){
-    app.bind('#test1', {
+    app.bind(cr('#test1'), {
       init: function(){
         done();
       }
@@ -18,7 +27,7 @@ describe('Controller', function(){
   });
 
   it('should init without error on dupe elements', function(done){
-    app.bind('#test1', {
+    app.bind(cr('#test2'), {
       init: function(){
         done();
       }
@@ -26,7 +35,7 @@ describe('Controller', function(){
   });
 
   it('should init without error, using extend', function(done){
-    app.bind('#test2', freeloader.Controller.extend({
+    app.bind(cr('#test3'), freeloader.Controller.extend({
       init: function(){
         done();
       }
@@ -43,11 +52,11 @@ describe('Controller', function(){
         }
       }
     });
-    app.bind('#test2', MyController);
+    app.bind(cr('#test4'), MyController);
   });
 
   it('should have an el property', function(done){
-    app.bind('#test3', {
+    app.bind(cr('#test5'), {
       init: function(){
         if (!this.el){
           done(new Error('no el property'));
@@ -65,7 +74,7 @@ describe('Controller', function(){
   });
 
   it('should have an $el property', function(done){
-    app.bind('#test3', {
+    app.bind(cr('#test6'), {
       init: function(){
         if (!this.$el){
           done(new Error('no $el property'));
@@ -79,7 +88,7 @@ describe('Controller', function(){
   });
 
   it('should have a working $el property', function(done){
-    app.bind('#test3', {
+    app.bind(cr('#test7'), {
       init: function(){
         if (this.$el.length !== 1){
           done(new Error('$el contains wrong number of things'));
@@ -91,7 +100,7 @@ describe('Controller', function(){
   });
 
   it('should have a $ property', function(done){
-    app.bind('#test3', {
+    app.bind(cr('#test8'), {
       init: function(){
         if (!this.$){
           done(new Error('no $ property'));
@@ -105,7 +114,7 @@ describe('Controller', function(){
   });
 
   it('should have a working $ property', function(done){
-    app.bind('#test3', {
+    app.bind(cr('#test9','<a href=""></a>'), {
       init: function(){
         var $a = this.$('a[href]');
         if ($a.length !== 1){
@@ -121,7 +130,7 @@ describe('Controller', function(){
 describe('Controller DOM events', function(){
 
   it('should accept empty event objects without error', function(done){
-    app.bind('#test1', {
+    app.bind(cr('#test10'), {
       events: {},
       init: function(){
         done();
@@ -130,7 +139,7 @@ describe('Controller DOM events', function(){
   });
 
   it('should accept non-empty event objects without error', function(done){
-    app.bind('#test1', {
+    app.bind(cr('#test11','<a href=""></a>'), {
       events: {'click a[href]':'handleClick'},
       init: function(){
         done();
@@ -139,7 +148,7 @@ describe('Controller DOM events', function(){
   });
 
   it('should handle a direct DOM event', function(done){
-    app.bind('#test3', {
+    app.bind(cr('#test12'), {
       events: {'click':'handleClick'},
       init: function(){
         this.$el.trigger('click');
@@ -151,7 +160,7 @@ describe('Controller DOM events', function(){
   });
 
   it('should handle a delegated DOM event', function(done){
-    app.bind('#test3', {
+    app.bind(cr('#test13','<a href=""></a>'), {
       events: {'click a[href]':'handleClick'},
       init: function(){
         this.$('a[href]').trigger('click');
@@ -163,7 +172,7 @@ describe('Controller DOM events', function(){
   });
 
   it('should have correct params in DOM handler', function(done){
-    app.bind('#test3', {
+    app.bind(cr('#test14','<a href=""></a>'), {
       events: {'click a[href]':'handleClick'},
       init: function(){
         this.self = this;
@@ -185,7 +194,7 @@ describe('Controller DOM events', function(){
 describe('Controller subscriptions', function(){
 
   it('should accept empty subs objects without error', function(done){
-    app.bind('#test1', {
+    app.bind(cr('#test15'), {
       subs: {},
       init: function(){
         done();
@@ -194,7 +203,7 @@ describe('Controller subscriptions', function(){
   });
 
   it('should accept non-empty subs objects without error', function(done){
-    app.bind('#test1', {
+    app.bind(cr('#test16'), {
       subs: {'foo':'foo'},
       init: function(){
         done();
@@ -203,7 +212,7 @@ describe('Controller subscriptions', function(){
   });
 
   it('should work globally', function(done){
-    app.bind('#test1', {
+    app.bind(cr('#test17'), {
       subs: {'baz':'baz'},
       init: function(){
         app.publish('baz');
@@ -215,7 +224,7 @@ describe('Controller subscriptions', function(){
   });
 
   it('should work globally, with arguments', function(done){
-    app.bind('#test1', {
+    app.bind(cr('#test18'), {
       subs: {'baz1':'baz1'},
       init: function(){
         app.publish('baz1','a',0);
@@ -232,7 +241,7 @@ describe('Controller subscriptions', function(){
   });
 
   it('should work locally', function(done){
-    app.bind('#test1', {
+    app.bind(cr('#test19'), {
       subs: {'baz2':'baz2'},
       init: function(){
         this.publish('baz2');
@@ -244,7 +253,7 @@ describe('Controller subscriptions', function(){
   });
 
   it('should work locally, with arguments', function(done){
-    app.bind('#test1', {
+    app.bind(cr('#test20'), {
       subs: {'baz3':'baz3'},
       init: function(){
         this.publish('baz3','a',0);
@@ -256,6 +265,76 @@ describe('Controller subscriptions', function(){
         assert(arg1 === 'a', 'arg1 was wrong');
         assert(arg2 === 0, 'arg2 was wrong');
         done();
+      }
+    });
+  });
+});
+
+describe('Controller comms', function(){
+
+  it('should accept empty comms objects without error', function(done){
+    app.bind(cr('#test21'), {
+      above: {},
+      below: {},
+      init: function(){
+        done();
+      }
+    });
+  });
+
+  it('should accept non-empty comms objects without error', function(done){
+    app.bind(cr('#test22'), {
+      above: {x:'foo'},
+      below: {y:'bar'},
+      init: function(){
+        done();
+      }
+    });
+  });
+
+  it('should send upward', function(done){
+    cr('#nested-outer1','<div id="nested-inner1"></div>');
+    app.bind('#nested-outer1', {
+      below: {'x':'foo'},
+      foo: function(ev, a, b){
+        assert(ev, 'no event');
+        assert(ev.type === 'x', 'wrong type');
+        assert(a === null, 'wrong arg a');
+        assert(b === 'null', 'wrong arg b');
+        done();
+      }
+    });
+    app.bind('#nested-inner1', {
+      init: function(){
+        this.up('x', null, 'null');
+      }
+    });
+  });
+
+  it('should send downward', function(done){
+    cr('#nested-outer2','<div id="nested-inner2a"></div><div id="nested-inner2b"></div>');
+    app.bind('#nested-inner2a', {
+      above: {'x':'foo'},
+      foo: function(ev, a, b){
+        assert(ev, 'no event');
+        assert(ev.type === 'x', 'wrong type');
+        assert(a === null, 'wrong arg a');
+        assert(b === 'null', 'wrong arg b');
+      }
+    });
+    app.bind('#nested-inner2b', {
+      above: {'x':'foo'},
+      foo: function(ev, a, b){
+        assert(ev, 'no event');
+        assert(ev.type === 'x', 'wrong type');
+        assert(a === null, 'wrong arg a');
+        assert(b === 'null', 'wrong arg b');
+        done();
+      }
+    });
+    app.bind('#nested-outer2', {
+      init: function(){
+        this.down('x', null, 'null');
       }
     });
   });
