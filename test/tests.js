@@ -127,6 +127,32 @@ describe('Controller', function(){
   });
 });
 
+describe('Controller inheritance', function(){
+  it('should inherit', function(done){
+
+    var MyController = freeloader.Controller.extend({
+      foo: function(){}
+    });
+
+    var MyController2 = MyController.extend({
+      bar: function(){}
+    });
+
+    var MyController3 = MyController2.extend({
+      baz: function(){}
+    });
+
+    app.bind(cr('#inheritance'), MyController3.extend({
+      init: function(){
+        assert(typeof this.foo === 'function');
+        assert(typeof this.bar === 'function');
+        assert(typeof this.baz === 'function');
+        done();
+      }
+    }));
+  });
+});
+
 describe('Controller DOM events', function(){
 
   it('should accept empty event objects without error', function(done){
@@ -311,6 +337,50 @@ describe('Controller comms', function(){
     app.bind('#nested-outer2', {
       init: function(){
         this.down('x', null, 'null');
+      }
+    });
+  });
+});
+
+describe('Controller content manip', function(){
+
+  it('should have working html method', function(done){
+    app.bind('#html-test-inner', {
+      init: function(){
+        done();
+      }
+    });
+    app.bind(cr('#html-test'), {
+      init: function(){
+        this.html('<div id="html-test-inner"></div>');
+      }
+    });
+  });
+
+  it('should have working prepend method', function(done){
+    app.bind('#prepend-test-inner', {
+      init: function(){
+        assert(this.$el.next().is('br'), 'prepend did not work');
+        done();
+      }
+    });
+    app.bind(cr('#prepend-test','<br>'), {
+      init: function(){
+        this.prepend('<div id="prepend-test-inner"></div>');
+      }
+    });
+  });
+
+  it('should have working append method', function(done){
+    app.bind('#append-test-inner', {
+      init: function(){
+        assert(this.$el.prev().is('br'), 'prepend did not work');
+        done();
+      }
+    });
+    app.bind(cr('#append-test','<br>'), {
+      init: function(){
+        this.append('<div id="append-test-inner"></div>');
       }
     });
   });

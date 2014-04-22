@@ -260,7 +260,7 @@ module.exports = function(_options){
   /*
    * This function finds unbound elements and binds them.
    */
-  function _scan(cb, root){
+  function _scan(root){
     root = root || _docEl;
     for (var i=0, leni=_bindings.length; i<leni; i++){
       var binding = _bindings[i];
@@ -282,7 +282,6 @@ module.exports = function(_options){
           controller._tag = _tag;
           controller.init();
         }
-        cb && cb(el);
       }
     }
   }
