@@ -1,4 +1,5 @@
 var _ = require('lodash-node');
+var $ = require('jquery-browserify')
 
 /**
  * Control a DOM subtree. Has various event routers:
@@ -172,7 +173,6 @@ Controller.prototype = {
 };
 
 // ########################################################################
-
 
 /**
  * Main export from this library. Use it to create an "app".

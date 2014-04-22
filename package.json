@@ -18,5 +18,9 @@
   "bugs": {
     "url": "https://github.com/greim/freeloader/issues"
   },
-  "homepage": "https://github.com/greim/freeloader"
+  "homepage": "https://github.com/greim/freeloader",
+  "dependencies": {
+    "lodash-node": "^2.4.1",
+    "jquery-browserify": "^1.8.1"
+  }
 }
