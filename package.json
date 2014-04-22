@@ -1,0 +1,22 @@
+{
+  "name": "freeloader",
+  "version": "0.0.0",
+  "description": "Client side control",
+  "main": "freeloader.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/greim/freeloader.git"
+  },
+  "author": "gregreimer@gmail.com",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/greim/freeloader/issues"
+  },
+  "homepage": "https://github.com/greim/freeloader"
+}
