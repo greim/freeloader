@@ -1,24 +1,26 @@
 var _ = require('lodash-node');
 var $ = require('jquery-browserify')
+var _slice = [].slice;
 
 /**
- * Control a DOM subtree. Has various event routers:
+ * Control a DOM subtree with various event routers:
  *
- *  - events: DOM event delegation
- *  - subs: app-wide subscriptions
- *  - above: incoming messages from higher-tree nodes
- *  - below: incoming messages from lower-tree nodes
+ * - subs:
+ * --- handles: app-wide pub/sub events
+ * --- trigger: this.publish() in other controllers
+ * - below:
+ * --- handles: incoming messages from descendant nodes
+ * --- trigger: this.up() in other controllers
+ * - above:
+ * --- handles: incoming messages from ancestor nodes
+ * --- trigger: this.down() in other controllers
+ * - events:
+ * --- handles: DOM events (using event delegation on this.el)
+ * --- trigger: user clicks, etc
  *
- * And also corresponding ways to trigger such events:
- *
- *  - this.publish: publish an app-wide event
- *  - this.up: send a message up the DOM tree
- *  - this.publish: send a message down the DOM tree
- *  - DOM events are triggered by user
- *
- * Don't instantiate controllers manually. It will be
- * done automatically at DOM ready and as you use this.html()
- * (and friends) from within controllers.
+ * Controllers aren't instantiated manually. Instead, they're
+ * created automatically at DOM ready and as this.html() is
+ * called from within controllers.
  */
 function Controller(el, app){
   var $el = $(el);
@@ -43,7 +45,6 @@ function Controller(el, app){
       $el.on(eventType, handler);
     }
   }, this);
-  this.init();
 }
 
 /*
@@ -71,7 +72,7 @@ Controller.prototype = {
   /*
    * This can be overridden.
    */
-  init: _noop,
+  init: function(){},
 
   /*
    * Overwrite the content of this DOM subtree.
@@ -108,10 +109,10 @@ Controller.prototype = {
   /*
    * Publish an event from this view.
    */
-  publish: function(name){
-    var args = _slice(arguments);
+  publish: function(type){
+    var args = _slice.call(arguments);
     args[0] = {
-      name: name,
+      type: type,
       source: this
     };
     return this._app.publish.apply(this._app, args);
@@ -140,9 +141,9 @@ Controller.prototype = {
    */
   _comm: function(isDown, args){
     args = _slice(args);
-    var name = args[0];
+    var type = args[0];
     args[0] = {
-      name: name,
+      type: type,
       source: this
     };
     var $els = isDown
@@ -155,8 +156,8 @@ Controller.prototype = {
         if (!handlers){
           return;
         } else {
-          if (handlers.hasOwnProperty(name)){
-            handlers[name].apply(that, args);
+          if (handlers.hasOwnProperty(type)){
+            handlers[type].apply(that, args);
           }
         }
       }, this);
@@ -213,27 +214,16 @@ module.exports = function(_options){
 
   var _loaded = false;
   $(function(){
-    setTimeout(function(){
-      _loaded = true;
-    },0);
+    _loaded = true;
   });
 
   var _docEl = document.documentElement;
-
-  var _slice = [].slice;
 
   /*
    * This is the list of controller bindings that freeloader
    * manages.
    */
   var _bindings = [];
-
-  /*
-   * For use anywhere we need stuff that doesn't do
-   * anything, but don't necessarily want to create
-   * new stuff.
-   */
-  var _noop = function(){};
 
   /*
    * Utility to generate unique strings local to here.
@@ -276,17 +266,18 @@ module.exports = function(_options){
       var $list = $(binding.selector, root);
       for (var j=0, lenj=$list.length; j<lenj; j++){
         var el = $list[j];
+        var $el = $(el);
         if (el[_tag] === undefined){
-          var $el = $(el);
           var tag = el[_tag] = {};
           $el.addClass(_tagClass);
+        }
+        if (!el[_tag].hasOwnProperty(binding.id)){
           _.each(binding.Controller.prototype.subs, function(val, name){
             $el.addClass(_toSubsClassName(name));
           });
-        }
-        if (!el[_tag].hasOwnProperty(binding.id)){
           var controller = new binding.Controller(el, _app);
           el[_tag][binding.id] = controller;
+          controller.init();
         }
         cb && cb(el);
       }
@@ -476,7 +467,7 @@ module.exports = function(_options){
      */
     bind: function(selector, AController){
 
-      if (!(AController instanceof Controller)){
+      if (!(AController.prototype instanceof Controller)){
         AController = Controller.extend(AController);
       }
 
@@ -493,7 +484,7 @@ module.exports = function(_options){
        * Rescan the page if we're past the initial
        * load event.
        */
-      if (_loaded) {
+      if (_loaded){
         _scan();
       }
     },
@@ -502,22 +493,21 @@ module.exports = function(_options){
      * Send a notification to any controllers that happen
      * to be live in the DOM and listening.
      */
-    publish: function(name){
+    publish: function(){
       var args = _slice.call(arguments);
-      if (typeof name === 'string'){
-        args[0] = {name:name};
+      if (typeof args[0] === 'string'){
+        args[0] = {type:args[0]};
       }
-      var subscribingEls = _getElsBySubName(name);
+      var type = args[0].type;
+      var subscribingEls = _getElsBySubName(type);
       for (var i=0, len=subscribingEls.length; i<len; i++){
         var tag = subscribingEls[i][_tag];
-        for (var bindingId in tag) {
-          if (tag.hasOwnProperty(bindingId)) {
-            var controller = tag[bindingId];
-            if (controller.subs && controller.subs[name]) {
-              controller[controller.subs[name]].apply(controller, args);
-            }
+        _.each(tag, function(controller){
+          var subs = controller.subs;
+          if (subs && subs[type]) {
+            controller[subs[type]].apply(controller, args);
           }
-        }
+        });
       }
     },
 
@@ -533,7 +523,7 @@ module.exports = function(_options){
      *   }
      * });
      */
-    load: function(url, cb, ctx){
+    _load: function(url, cb, ctx){
       args = args || {};
       $.ajax(url, {
         type: 'GET',
@@ -554,7 +544,7 @@ module.exports = function(_options){
      * Go to a new page URL using XHR to quickly load the page.
      */
     navigate: function(url){
-      _app.load(url, function(err, doc){
+      _app._load(url, function(err, doc){
         if (!err){
           updatePage(doc);
           _history.pushState({url:url}, url);
@@ -577,9 +567,12 @@ module.exports = function(_options){
       _errors[status] = _.bind(handler, ctx);
     },
 
-    scan: _scan,
-    Controller: Controller
+    scan: _scan
   };
+
+  // ########################################################################
+
+  module.exports.Controller = Controller;
 
   // ########################################################################
 
@@ -588,7 +581,7 @@ module.exports = function(_options){
    */
   _history.onPopState(function(ev){
     var url = ev.state ? ev.state.url : location.pathname + location.search;
-    _app.load(url, function(err, doc){
+    _app._load(url, function(err, doc){
       if (!err){
         updatePage(doc);
       } else {
@@ -599,8 +592,5 @@ module.exports = function(_options){
 
   // ########################################################################
 
-  /*
-   * Return from the define() call.
-   */
   return _app;
 };
