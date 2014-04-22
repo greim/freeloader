@@ -212,18 +212,6 @@ describe('Controller subscriptions', function(){
   });
 
   it('should work globally', function(done){
-    app.bind(cr('#test17'), {
-      subs: {'baz':'baz'},
-      init: function(){
-        app.publish('baz');
-      },
-      baz: function(){
-        done();
-      }
-    });
-  });
-
-  it('should work globally, with arguments', function(done){
     app.bind(cr('#test18'), {
       subs: {'baz1':'baz1'},
       init: function(){
@@ -241,18 +229,6 @@ describe('Controller subscriptions', function(){
   });
 
   it('should work locally', function(done){
-    app.bind(cr('#test19'), {
-      subs: {'baz2':'baz2'},
-      init: function(){
-        this.publish('baz2');
-      },
-      baz2: function(){
-        done();
-      }
-    });
-  });
-
-  it('should work locally, with arguments', function(done){
     app.bind(cr('#test20'), {
       subs: {'baz3':'baz3'},
       init: function(){
