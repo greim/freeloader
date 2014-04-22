@@ -147,12 +147,12 @@ Controller.prototype = {
       source: this
     };
     var $els = isDown
-      ? this.$('.' + this._tagClass)
-      : this.$el.parents('.' + this._tagClass);
+      ? this.$('.' + this._app.tagClass)
+      : this.$el.parents('.' + this._app.tagClass);
     var self = this;
     $els.each(function(){
       var el = this;
-      _.each(el[self._tag], function(that){
+      _.each(el[self._app.tag], function(that){
         var handlers = that[isDown ? 'above' : 'below'];
         if (!handlers){
           return;
@@ -570,7 +570,9 @@ module.exports = function(_options){
       _errors[status] = _.bind(handler, ctx);
     },
 
-    scan: _scan
+    scan: _scan,
+    tag: _tag,
+    tagClass: _tagClass
   };
 
   // ########################################################################
