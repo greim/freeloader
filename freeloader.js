@@ -197,8 +197,16 @@ module.exports = function(_options){
    */
 
   _options = _.extend({
-    prefix: '__fl_'
+    prefix: '__fl_',
+    root: '/'
   }, _options);
+
+  if (!/^\//.test(_options.root)){
+    _options.root = '/' + _options.root;
+  }
+  if (!/\/$/.test(_options.root)){
+    _options.root = _options.root + '/';
+  }
 
   _errors = {
     xxx: function(err){
@@ -411,16 +419,33 @@ module.exports = function(_options){
   // ########################################################################
 
   var _history = (function(){
+    var common = {
+      start: function(){
+        this._setup();
+        this.onPopState(function(ev){
+          var url = ev.state ? ev.state.url : location.pathname + location.search;
+          _app._load(url, function(err, doc){
+            if (!err){
+              _updatePage(doc);
+            } else {
+              _doError(err);
+            }
+          });
+        });
+      }
+    };
     var hasPushState = window.history && typeof window.history.pushState === 'function';
     if (hasPushState){
       // client supports history API
       var ready = false;
-      $(function(){
-        setTimeout(function(){
-          ready = true;
-        },0);
-      });
-      return {
+      return _.extend(common, {
+        _setup: function(){
+          $(function(){
+            setTimeout(function(){
+              ready = true;
+            },0);
+          });
+        },
         pushState: function(state, url){
           window.history.pushState(state, '', url);
         },
@@ -434,45 +459,69 @@ module.exports = function(_options){
               // avoid webkit's onload popstate
               return;
             }
-            console.log(ev.originalEvent)
             return callback.apply(this, arguments);
           });
         }
-      };
+      });
     } else {
       // no history API, fallback to hash state
       var states = {};
+      var thisUrl = location.pathname + location.search;
+      states[thisUrl] = {url:thisUrl};
       var callbacks = [];
       var back = true;
-      function changeHandler(){
-        var url = '/' + location.hash.substring(1);
-        if (back && states.hasOwnProperty(url)){
-          back = true;
-          _.each(callbacks, function(callback){
-            callback({
-              state: states[url]
-            });
+      return _.extend(common, {
+        _setup: function(){
+          function changeHandler(){
+            var url = _options.root + location.hash.substring(1);
+            if (back && states.hasOwnProperty(url)){
+              _.each(callbacks, function(callback){
+                callback({
+                  state: states[url]
+                });
+              });
+            }
+            back = true;
+          }
+          $(window).on('hashchange', function(ev){
+            changeHandler();
           });
-        }
-      }
-      $(window).on('hashchange', function(ev){
-        cb.call(ev.state);
-      });
-      return {
+          if (location.pathname !== _options.root){
+            var hash = '#' + location.pathname.substring(_options.root.length);
+            location.replace(_options.root+location.search + hash);
+          } else if (location.hash){
+            var url = _options.root + location.hash.substring(1);
+            _app._load(url + location.search, function(err, doc){
+              if (!err){
+                _updatePage(doc);
+              } else {
+                _doError(err);
+              }
+            });
+          }
+        },
         pushState: function(state, url){
           back = false;
           states[url] = state;
-          location.href = '#' + url.substring(1);
+          var hash = '#' + url.substring(1);
+          if (url.indexOf(_options.root) === 0){
+            hash = '#' + url.substring(_options.root.length);
+          }
+          location.href = hash;
         },
         replaceState: function(state, url){
           back = false;
           states[url] = state;
-          location.replace('#' + url.substring(1));
+          var hash = '#' + url.substring(1);
+          if (url.indexOf(_options.root) === 0){
+            hash = '#' + url.substring(_options.root.length);
+          }
+          location.replace(hash);
         },
         onPopState: function(callback, ctx){
           callbacks.push(_.bind(callback, ctx));
         }
-      };
+      });
     }
   })();
 
@@ -580,7 +629,7 @@ module.exports = function(_options){
      * Go to a new page URL using XHR to quickly load the page.
      */
     navigate: function(url){
-      _app._load(url, function(err, doc){
+      this._load(url, function(err, doc){
         if (!err){
           _updatePage(doc);
           _history.pushState({url:url}, url);
@@ -613,16 +662,7 @@ module.exports = function(_options){
   /*
    * Make sure the back button works.
    */
-  _history.onPopState(function(ev){
-    var url = ev.state ? ev.state.url : location.pathname + location.search;
-    _app._load(url, function(err, doc){
-      if (!err){
-        _updatePage(doc);
-      } else {
-        _doError(err);
-      }
-    });
-  });
+  _history.start();
 
   // ########################################################################
 
