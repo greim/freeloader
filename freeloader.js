@@ -74,11 +74,17 @@ Controller.prototype = {
    */
   init: function(){},
 
+  _sanitize: function(content){
+    var $cntnt = $(content);
+    $cntnt.find('script').remove();
+    return $cntnt;
+  },
+
   /*
    * Overwrite the content of this DOM subtree.
    */
   html: function(content){
-    this.$el.html(content);
+    this.$el.html(this._sanitize(content));
     this.scan();
   },
 
@@ -86,7 +92,7 @@ Controller.prototype = {
    * Append to the content of this DOM subtree.
    */
   append: function(content){
-    this.$el.append(content);
+    this.$el.append(this._sanitize(content));
     this.scan();
   },
 
@@ -94,7 +100,7 @@ Controller.prototype = {
    * Prepend to the content of this DOM subtree.
    */
   prepend: function(content){
-    this.$el.prepend(content);
+    this.$el.prepend(this._sanitize(content));
     this.scan();
   },
 
@@ -327,7 +333,9 @@ module.exports = function(_options){
   /*
    * Scan the document on DOM ready.
    */
-  $(_scan);
+  $(function(){
+    _scan();
+  });
 
   // ########################################################################
 
@@ -381,12 +389,15 @@ module.exports = function(_options){
     return parser;
   })();
 
-  function updatePage(doc){
-    document.title = doc.title;
-    var body = doc.body;
-    body.parentNode.removeChild(body);
-    document.body = body;
-    _app.scan(document.body);
+  function _updatePage(newDoc){
+    var oldDoc = document;
+    oldDoc.title = newDoc.title;
+    var newBody = newDoc.body;
+    newBody.parentNode.removeChild(newBody);
+    var oldBody = oldDoc.body;
+    oldBody.parentNode.removeChild(oldBody);
+    oldDoc.documentElement.appendChild(newBody);
+    _app.scan(oldDoc.body);
   }
 
   // ########################################################################
@@ -547,7 +558,7 @@ module.exports = function(_options){
     navigate: function(url){
       _app._load(url, function(err, doc){
         if (!err){
-          updatePage(doc);
+          _updatePage(doc);
           _history.pushState({url:url}, url);
         } else {
           _doError(err);
@@ -586,7 +597,7 @@ module.exports = function(_options){
     var url = ev.state ? ev.state.url : location.pathname + location.search;
     _app._load(url, function(err, doc){
       if (!err){
-        updatePage(doc);
+        _updatePage(doc);
       } else {
         _doError(err);
       }

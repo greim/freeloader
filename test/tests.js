@@ -358,7 +358,7 @@ describe('Controller content manip', function(){
 
 describe('Content loading', function(){
   it('should load', function(done){
-    app._load('/test1.html', function(err, doc){
+    app._load('/loadme.html', function(err, doc){
       assert(doc.title === 'Test 1','wrong title');
       done();
     });

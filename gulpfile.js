@@ -3,17 +3,26 @@ var source = require('vinyl-source-stream');
 var watchify = require('watchify');
 var server = require('./test/server');
 
-gulp.task('default', ['develop','server']);
+gulp.task('default', ['develop-tests']);
 
-gulp.task('develop', function(){
+gulp.task('develop-tests', ['server'], function(){
   function rebundle(){
     return bundler.bundle({debug:true})
     .pipe(source('tests-bundle.js'))
     .pipe(gulp.dest('./test/server/public/generated/'));
   }
-  var bundler = watchify({
-    entries: ['./test/tests.js','./freeloader.js']
-  });
+  var bundler = watchify('./test/tests.js');
+  bundler.on('update', rebundle);
+  return rebundle();
+});
+
+gulp.task('develop-sandbox', ['server'], function(){
+  function rebundle(){
+    return bundler.bundle({debug:true})
+    .pipe(source('sandbox.js'))
+    .pipe(gulp.dest('./test/server/public/generated/'));
+  }
+  var bundler = watchify('./test/server/public/sandbox/sandbox.js');
   bundler.on('update', rebundle);
   return rebundle();
 });
