@@ -526,7 +526,6 @@ module.exports = function(_options){
      * });
      */
     _load: function(url, cb, ctx){
-      args = args || {};
       $.ajax(url, {
         type: 'GET',
         dataType: 'html',
