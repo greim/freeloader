@@ -5,7 +5,7 @@ var watchify = require('watchify');
 gulp.task('default', ['develop']);
 gulp.task('develop', function(){
   function rebundle(){
-    return bundler.bundle()
+    return bundler.bundle({debug:true})
     .pipe(source('tests-bundle.js'))
     .pipe(gulp.dest('./test/dist'));
   }

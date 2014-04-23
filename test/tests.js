@@ -385,3 +385,6 @@ describe('Controller content manip', function(){
     });
   });
 });
+
+describe('Content loading', function(){
+});
