@@ -117,6 +117,7 @@ describe('Controller', function(){
     });
   });
 });
+
 describe('Controller inheritance', function(){
   it('should inherit', function(done){
     var MyController = freeloader.Controller.extend({

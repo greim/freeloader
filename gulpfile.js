@@ -3,9 +3,11 @@ var source = require('vinyl-source-stream');
 var watchify = require('watchify');
 var server = require('./test/server');
 
-gulp.task('default', ['develop-tests']);
+gulp.task('default', ['dev']);
 
-gulp.task('develop-tests', ['server'], function(){
+gulp.task('dev', ['dev-tests','dev-sandbox']);
+
+gulp.task('dev-tests', ['server'], function(){
   function rebundle(){
     return bundler.bundle({debug:true})
     .pipe(source('tests-bundle.js'))
@@ -16,7 +18,7 @@ gulp.task('develop-tests', ['server'], function(){
   return rebundle();
 });
 
-gulp.task('develop-sandbox', ['server'], function(){
+gulp.task('dev-sandbox', ['server'], function(){
   function rebundle(){
     return bundler.bundle({debug:true})
     .pipe(source('sandbox.js'))

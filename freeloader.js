@@ -343,50 +343,58 @@ module.exports = function(_options){
    * A function that takes a string of HTML and returns a document object.
    */
   var _parseDocument = (function(){
-    function createDocumentUsingParser(html) {
-      return (new DOMParser()).parseFromString(html, 'text/html');
-    }
-    function createDocumentUsingDOM(html) {
-      var doc = document.implementation.createHTMLDocument('');
-      doc.documentElement.innerHTML = html;
-      return doc;
-    }
-    function createDocumentUsingWrite(html) {
-      var doc = document.implementation.createHTMLDocument('');
-      doc.open('replace');
-      doc.write(html);
-      doc.close();
-      return doc;
-    }
+
     /*
-     * Use createDocumentUsingParser if DOMParser is defined and natively
-     * supports 'text/html' parsing (Firefox 12+, IE 10)
-     * 
-     * Use createDocumentUsingDOM if createDocumentUsingParser throws an
-     * exception due to unsupported type 'text/html' (Firefox < 12, Opera)
-     * 
-     * Use createDocumentUsingWrite if:
-     *  - DOMParser isn't defined
-     *  - createDocumentUsingParser returns null due to unsupported type
-     *    'text/html' (Chrome, Safari)
-     *  - createDocumentUsingDOM doesn't create a valid HTML document
-     *    (safeguarding against potential edge cases)
+     * Checks whether a given createDocument function actually works.
      */
-    var parser;
-    if (window.DOMParser) {
+    function test(createDocument){
       try {
-        var testDoc = createDocumentUsingParser('<html><body><p>test');
-        if (testDoc && testDoc.body && testDoc.body.childNodes.length === 1) {
-          parser = createDocumentUsingParser;
-        }
-      } catch(ex) {
-        parser = createDocumentUsingDOM;
+        var testDoc = createDocument('<html><body><p>test');
+        return testDoc && testDoc.body && testDoc.body.childNodes.length === 1;
+      } catch(err) {
+        return false;
       }
     }
-    if (!parser) {
-      parser = createDocumentUsingWrite;
-    }
-    return parser;
+
+    /*
+     * Use one of these to create new documents.
+     */
+    var candidates = [
+      function(html){
+        return (new DOMParser()).parseFromString(html, 'text/html');
+      },
+      function(html){
+        var doc = document.implementation.createHTMLDocument('');
+        doc.documentElement.innerHTML = html;
+        return doc;
+      },
+      function(html){
+        var doc = document.implementation.createHTMLDocument('');
+        doc.open('replace');
+        doc.write(html);
+        doc.close();
+        return doc;
+      },
+      function(html){
+        var iframe = document.createElement('iframe');
+        iframe.src = 'about:blank';
+        iframe.style.display = 'none';
+        document.body.appendChild(iframe);
+        var doc = iframe.contentWindow.document;
+        doc.open('replace');
+        doc.write(html);
+        doc.close();
+        document.body.removeChild(iframe);
+        return doc;
+      }
+    ];
+
+    /*
+     * From list of candidates, return first successful one.
+     */
+    return _.find(candidates, function(candidate){
+      return test(candidate);
+    });
   })();
 
   function _updatePage(newDoc){
@@ -405,6 +413,13 @@ module.exports = function(_options){
   var _history = (function(){
     var hasPushState = window.history && typeof window.history.pushState === 'function';
     if (hasPushState){
+      // client supports history API
+      var ready = false;
+      $(function(){
+        setTimeout(function(){
+          ready = true;
+        },0);
+      });
       return {
         pushState: function(state, url){
           window.history.pushState(state, '', url);
@@ -413,10 +428,19 @@ module.exports = function(_options){
           window.history.replaceState(state, '', url);
         },
         onPopState: function(callback, ctx){
-          $(window).on('popstate', _.bind(callback, ctx));
+          var callback = _.bind(callback, ctx);
+          $(window).on('popstate', function(ev){
+            if (!ready){
+              // avoid webkit's onload popstate
+              return;
+            }
+            console.log(ev.originalEvent)
+            return callback.apply(this, arguments);
+          });
         }
       };
     } else {
+      // no history API, fallback to hash state
       var states = {};
       var callbacks = [];
       var back = true;
@@ -586,10 +610,6 @@ module.exports = function(_options){
 
   // ########################################################################
 
-  module.exports.Controller = Controller;
-
-  // ########################################################################
-
   /*
    * Make sure the back button works.
    */
@@ -608,3 +628,7 @@ module.exports = function(_options){
 
   return _app;
 };
+
+// ########################################################################
+
+module.exports.Controller = Controller;
