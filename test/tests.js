@@ -17,7 +17,6 @@ function cr(selId, content){
 }
 
 describe('Controller', function(){
-
   it('should init without error', function(done){
     app.bind(cr('#test1'), {
       init: function(){
@@ -25,7 +24,6 @@ describe('Controller', function(){
       }
     });
   });
-
   it('should init without error on dupe elements', function(done){
     app.bind(cr('#test2'), {
       init: function(){
@@ -33,7 +31,6 @@ describe('Controller', function(){
       }
     });
   });
-
   it('should init without error, using extend', function(done){
     app.bind(cr('#test3'), freeloader.Controller.extend({
       init: function(){
@@ -41,7 +38,6 @@ describe('Controller', function(){
       }
     }));
   });
-
   it('should have correct this', function(done){
     var MyController = freeloader.Controller.extend({
       init: function(){
@@ -54,7 +50,6 @@ describe('Controller', function(){
     });
     app.bind(cr('#test4'), MyController);
   });
-
   it('should have an el property', function(done){
     app.bind(cr('#test5'), {
       init: function(){
@@ -72,7 +67,6 @@ describe('Controller', function(){
       }
     });
   });
-
   it('should have an $el property', function(done){
     app.bind(cr('#test6'), {
       init: function(){
@@ -86,7 +80,6 @@ describe('Controller', function(){
       }
     });
   });
-
   it('should have a working $el property', function(done){
     app.bind(cr('#test7'), {
       init: function(){
@@ -98,7 +91,6 @@ describe('Controller', function(){
       }
     });
   });
-
   it('should have a $ property', function(done){
     app.bind(cr('#test8'), {
       init: function(){
@@ -112,7 +104,6 @@ describe('Controller', function(){
       }
     });
   });
-
   it('should have a working $ property', function(done){
     app.bind(cr('#test9','<a href=""></a>'), {
       init: function(){
@@ -126,22 +117,17 @@ describe('Controller', function(){
     });
   });
 });
-
 describe('Controller inheritance', function(){
   it('should inherit', function(done){
-
     var MyController = freeloader.Controller.extend({
       foo: function(){}
     });
-
     var MyController2 = MyController.extend({
       bar: function(){}
     });
-
     var MyController3 = MyController2.extend({
       baz: function(){}
     });
-
     app.bind(cr('#inheritance'), MyController3.extend({
       init: function(){
         assert(typeof this.foo === 'function');
@@ -154,7 +140,6 @@ describe('Controller inheritance', function(){
 });
 
 describe('Controller DOM events', function(){
-
   it('should accept empty event objects without error', function(done){
     app.bind(cr('#test10'), {
       events: {},
@@ -163,7 +148,6 @@ describe('Controller DOM events', function(){
       }
     });
   });
-
   it('should accept non-empty event objects without error', function(done){
     app.bind(cr('#test11','<a href=""></a>'), {
       events: {'click a[href]':'handleClick'},
@@ -172,7 +156,6 @@ describe('Controller DOM events', function(){
       }
     });
   });
-
   it('should handle a direct DOM event', function(done){
     app.bind(cr('#test12'), {
       events: {'click':'handleClick'},
@@ -184,7 +167,6 @@ describe('Controller DOM events', function(){
       }
     });
   });
-
   it('should handle a delegated DOM event', function(done){
     app.bind(cr('#test13','<a href=""></a>'), {
       events: {'click a[href]':'handleClick'},
@@ -196,7 +178,6 @@ describe('Controller DOM events', function(){
       }
     });
   });
-
   it('should have correct params in DOM handler', function(done){
     app.bind(cr('#test14','<a href=""></a>'), {
       events: {'click a[href]':'handleClick'},
@@ -218,7 +199,6 @@ describe('Controller DOM events', function(){
 });
 
 describe('Controller subscriptions', function(){
-
   it('should accept empty subs objects without error', function(done){
     app.bind(cr('#test15'), {
       subs: {},
@@ -227,7 +207,6 @@ describe('Controller subscriptions', function(){
       }
     });
   });
-
   it('should accept non-empty subs objects without error', function(done){
     app.bind(cr('#test16'), {
       subs: {'foo':'foo'},
@@ -236,7 +215,6 @@ describe('Controller subscriptions', function(){
       }
     });
   });
-
   it('should work globally', function(done){
     app.bind(cr('#test18'), {
       subs: {'baz1':'baz1'},
@@ -253,7 +231,6 @@ describe('Controller subscriptions', function(){
       }
     });
   });
-
   it('should work locally', function(done){
     app.bind(cr('#test20'), {
       subs: {'baz3':'baz3'},
@@ -273,7 +250,6 @@ describe('Controller subscriptions', function(){
 });
 
 describe('Controller comms', function(){
-
   it('should accept empty comms objects without error', function(done){
     app.bind(cr('#test21'), {
       above: {},
@@ -283,7 +259,6 @@ describe('Controller comms', function(){
       }
     });
   });
-
   it('should accept non-empty comms objects without error', function(done){
     app.bind(cr('#test22'), {
       above: {x:'foo'},
@@ -293,7 +268,6 @@ describe('Controller comms', function(){
       }
     });
   });
-
   it('should send upward', function(done){
     cr('#nested-outer1','<div id="nested-inner1"></div>');
     app.bind('#nested-outer1', {
@@ -312,7 +286,6 @@ describe('Controller comms', function(){
       }
     });
   });
-
   it('should send downward', function(done){
     cr('#nested-outer2','<div id="nested-inner2a"></div><div id="nested-inner2b"></div>');
     app.bind('#nested-inner2a', {
@@ -343,7 +316,6 @@ describe('Controller comms', function(){
 });
 
 describe('Controller content manip', function(){
-
   it('should have working html method', function(done){
     app.bind('#html-test-inner', {
       init: function(){
@@ -356,7 +328,6 @@ describe('Controller content manip', function(){
       }
     });
   });
-
   it('should have working prepend method', function(done){
     app.bind('#prepend-test-inner', {
       init: function(){
@@ -370,7 +341,6 @@ describe('Controller content manip', function(){
       }
     });
   });
-
   it('should have working append method', function(done){
     app.bind('#append-test-inner', {
       init: function(){
@@ -387,10 +357,16 @@ describe('Controller content manip', function(){
 });
 
 describe('Content loading', function(){
-
   it('should load', function(done){
     app._load('/test1.html', function(err, doc){
       assert(doc.title === 'Test 1','wrong title');
+      done();
+    });
+  });
+  it('should handle error', function(done){
+    app._load('/missing.html', function(err, doc){
+      assert(err,'missing error');
+      assert(err.status === 404,'wrong status');
       done();
     });
   });
