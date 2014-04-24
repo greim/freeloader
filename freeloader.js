@@ -350,7 +350,7 @@ module.exports = function(_options){
   /*
    * A function that takes a string of HTML and returns a document object.
    */
-  var _parseDocument = (function(){
+  var _parser = (function(){
 
     /*
      * Checks whether a given createDocument function actually works.
@@ -367,23 +367,30 @@ module.exports = function(_options){
     /*
      * Use one of these to create new documents.
      */
-    var candidates = [
-      function(html){
+    var candidates = [{
+      name: 'DOMParser',
+      parse: function(html){
         return (new DOMParser()).parseFromString(html, 'text/html');
-      },
-      function(html){
+      }
+    },{
+      name: 'createHTMLDocument (innerHTML)',
+      parse: function(html){
         var doc = document.implementation.createHTMLDocument('');
         doc.documentElement.innerHTML = html;
         return doc;
-      },
-      function(html){
+      }
+    },{
+      name: 'createHTMLDocument (write)',
+      parse: function(html){
         var doc = document.implementation.createHTMLDocument('');
         doc.open('replace');
         doc.write(html);
         doc.close();
         return doc;
-      },
-      function(html){
+      }
+    },{
+      name: 'iframe.contentWindow.document',
+      parse: function(html){
         var iframe = document.createElement('iframe');
         iframe.src = 'about:blank';
         iframe.style.display = 'none';
@@ -395,13 +402,13 @@ module.exports = function(_options){
         document.body.removeChild(iframe);
         return doc;
       }
-    ];
+    }];
 
     /*
      * From list of candidates, return first successful one.
      */
     return _.find(candidates, function(candidate){
-      return test(candidate);
+      return test(candidate.parse);
     });
   })();
 
@@ -419,6 +426,10 @@ module.exports = function(_options){
   // ########################################################################
 
   var _history = (function(){
+
+    /*
+     * Same regardless of implementation.
+     */
     var common = {
       start: function(){
         this._setup();
@@ -434,9 +445,15 @@ module.exports = function(_options){
         });
       }
     };
-    var hasPushState = window.history && typeof window.history.pushState === 'function';
-    if (hasPushState){
-      // client supports history API
+
+    var hasHistoryApi = window.history
+      && typeof window.history.pushState === 'function';
+
+    if (hasHistoryApi){
+
+      /*
+       * Client supports history API.
+       */
       var ready = false;
       return _.extend(common, {
         _setup: function(){
@@ -464,27 +481,26 @@ module.exports = function(_options){
         }
       });
     } else {
-      // no history API, fallback to hash state
+
+      /*
+       * No history API, fallback to hash state.
+       */
       var states = {};
-      var thisUrl = location.pathname + location.search;
-      states[thisUrl] = {url:thisUrl};
       var callbacks = [];
       var back = true;
       return _.extend(common, {
         _setup: function(){
-          function changeHandler(){
-            var url = _options.root + location.hash.substring(1);
-            if (back && states.hasOwnProperty(url)){
+          $(window).on('hashchange', function(ev){
+            if (back){
+              var url = _options.root + location.hash.substring(1);
               _.each(callbacks, function(callback){
                 callback({
                   state: states[url]
                 });
               });
+            } else {
+              back = true;
             }
-            back = true;
-          }
-          $(window).on('hashchange', function(ev){
-            changeHandler();
           });
           if (location.pathname !== _options.root){
             var hash = '#' + location.pathname.substring(_options.root.length);
@@ -614,7 +630,7 @@ module.exports = function(_options){
         type: 'GET',
         dataType: 'html',
         success: function(html){
-          var doc = _parseDocument(html);
+          var doc = _parser.parse(html);
           cb.call(ctx, null, doc);
         },
         error: function(xhr, status, message){
@@ -629,6 +645,10 @@ module.exports = function(_options){
      * Go to a new page URL using XHR to quickly load the page.
      */
     navigate: function(url){
+      if (url.indexOf(_options.root) !== 0){
+        location.href = url;
+        return;
+      }
       this._load(url, function(err, doc){
         if (!err){
           _updatePage(doc);
