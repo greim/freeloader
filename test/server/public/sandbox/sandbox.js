@@ -1,5 +1,5 @@
 var freeloader = require('../../../../freeloader');
-var $ = require('jquery-browserify');
+var $ = require('jquery');
 
 var app = freeloader({
   root: '/sandbox/'
