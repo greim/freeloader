@@ -276,6 +276,7 @@ module.exports = function(_options){
    */
   function _scan(root){
     root = root || _docEl;
+    var controllers;
     for (var i=0, leni=_bindings.length; i<leni; i++){
       var binding = _bindings[i];
       var $list = $(binding.selector, root);
@@ -294,10 +295,14 @@ module.exports = function(_options){
           el[_tag][binding.id] = controller;
           controller._tagClass = _tagClass;
           controller._tag = _tag;
-          controller.init();
+          controllers || (controllers = []);
+          controllers.push(controller);
         }
       }
     }
+    controllers && _.each(controllers, function(controller){
+      controller.init();
+    });
   }
 
   /*
