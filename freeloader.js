@@ -425,7 +425,7 @@ module.exports = function(_options){
     var oldBody = oldDoc.body;
     oldBody.parentNode.removeChild(oldBody);
     oldDoc.documentElement.appendChild(newBody);
-    _app.scan(oldDoc.body);
+    _app.scan(oldDoc);
   }
 
   // ########################################################################
