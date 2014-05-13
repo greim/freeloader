@@ -355,6 +355,41 @@ describe('Controller content manip', function(){
       }
     });
   });
+  it('should load', function(done){
+    app.bind(cr('#load-test'), {
+      init: function(){
+        var self = this;
+        self.load('/loadme-frag.html', function(err){
+          assert(self.$('div').length === 1, 'missing div');
+          assert(self.$('p').length === 3, 'missing paras');
+          done(err);
+        });
+      }
+    });
+  });
+  it('should load from a selector', function(done){
+    app.bind(cr('#load-test2'), {
+      init: function(){
+        var self = this;
+        self.load('/loadme-frag.html', 'p', function(err){
+          assert(self.$('div').length === 0, 'unexpected div');
+          assert(self.$('p').length === 3, 'missing paras');
+          done(err);
+        });
+      }
+    });
+  });
+  it('should load with error', function(done){
+    app.bind(cr('#load-test-error'), {
+      init: function(){
+        var self = this;
+        self.load('/loadme-frag-NOTEXIST.html', function(err){
+          assert(!!err, 'missing error');
+          done();
+        });
+      }
+    });
+  });
 });
 
 describe('Content loading', function(){

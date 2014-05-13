@@ -26,7 +26,7 @@ function Controller(el, app){
   var $el = $(el);
   this.el = el;
   this.$el = $el;
-  this._app = app;
+  this.app = app;
   _.each(this.events, function(action, key){
     var matches = key.match(/^\s*(\S+)(\s+(.+))?$/i);
     if (!matches) {
@@ -109,7 +109,7 @@ Controller.prototype = {
    * check for unbound elements.
    */
   scan: function(){
-    this._app.scan(this.el);
+    this.app.scan(this.el);
   },
 
   /*
@@ -121,7 +121,7 @@ Controller.prototype = {
       type: type,
       source: this
     };
-    return this._app.publish.apply(this._app, args);
+    return this.app.publish.apply(this.app, args);
   },
 
   /*
@@ -153,12 +153,12 @@ Controller.prototype = {
       source: this
     };
     var $els = isDown
-      ? this.$('.' + this._app.tagClass)
-      : this.$el.parents('.' + this._app.tagClass);
+      ? this.$('.' + this.app.tagClass)
+      : this.$el.parents('.' + this.app.tagClass);
     var self = this;
     $els.each(function(){
       var el = this;
-      _.each(el[self._app.tag], function(that){
+      _.each(el[self.app.tag], function(that){
         var handlers = that[isDown ? 'above' : 'below'];
         if (!handlers){
           return;
@@ -169,6 +169,44 @@ Controller.prototype = {
         }
       });
       el = el.parentNode;
+    });
+  },
+
+  load: function(){
+    var args = _slice.call(arguments);
+    var url = args.shift();
+    var callback = args.shift();
+    var selector;
+    if (typeof callback === 'string'){
+      selector = callback;
+      callback = args.shift();
+    }
+    var self = this;
+    $.ajax(url, {
+      success: function(data){
+        var err = null;
+        try {
+          var $content = $(data);
+          if (selector){
+            $content = $content.find(selector);
+          }
+          self.html($content);
+        } catch(ex) {
+          err = ex;
+        }
+        callback(err);
+      },
+      error: function(xhr){
+        var message;
+        if (/^4\d\d$/.test(xhr.status)){
+          message = 'Client error, status ' + xhr.status;
+        } else if (/^5\d\d$/.test(xhr.status)){
+          message = 'Server error, status ' + xhr.status;
+        } else {
+          message = 'Error, status ' + xhr.status;
+        }
+        callback(new Error(message));
+      }
     });
   },
 
