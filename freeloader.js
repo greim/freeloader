@@ -455,7 +455,46 @@ module.exports = function(_options){
     });
   })();
 
+  /*
+   * Executes any new css/scripts in an incoming document.
+   */
+  var processCssJs = (function(){
+    var loadedScripts = {};
+    var loadedStyleSheets = {};
+    $('script[src]').each(function(){
+      loadedScripts[this.src] = true;
+    });
+    $('link[type="text/css"][href]').each(function(){
+      loadedStyleSheets[this.href] = true;
+    });
+    return function(incomingDoc){
+      var $docEl = $(incomingDoc.documentElement);
+      $docEl.find('script').remove().toArray()
+      .map(function(scriptEl){
+        return scriptEl.src;
+      })
+      .filter(function(url){
+        return url && !loadedScripts[url];
+      })
+      .forEach(function(url){
+        $.getScript(url);
+        loadedScripts[url] = true;
+      });
+      $docEl.find('link[type="text/css"][href]').remove()
+      .filter(function(){
+        var url = this.href;
+        return url && !loadedStyleSheets[url];
+      })
+      .each(function(){
+        var url = this.href;
+        $('head').append(this);
+        loadedStyleSheets[url] = true;
+      });
+    };
+  })();
+
   function _updatePage(newDoc){
+    processCssJs(newDoc);
     var oldDoc = document;
     oldDoc.title = newDoc.title;
     var newBody = newDoc.body;
