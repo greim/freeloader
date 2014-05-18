@@ -392,6 +392,247 @@ describe('Controller content manip', function(){
   });
 });
 
+describe('Injection', function(){
+  it('should inject to replace', function(done){
+    var worked = false;
+    app.bind('.inject-test-1-updated', {
+      init: function(){
+        worked = true;
+      }
+    });
+    app.bind(cr('#inject-test-1'), {
+      init: function(){
+        this.inject({
+          content: '<div class="inject-test-1-updated"></div>',
+          replace: true
+        });
+        assert($('.inject-test-1-updated').length === 1);
+        assert(worked);
+        done();
+      }
+    });
+  });
+  it('should inject into top', function(done){
+    var worked = false;
+    app.bind('#inject-test-2-updated', {
+      init: function(){
+        worked = true;
+      }
+    });
+    app.bind(cr('#inject-test-2'), {
+      init: function(){
+        this.inject({content:'<div id="inject-test-2-updated"></div>'});
+        assert(this.$('div').length === 1);
+        assert(worked);
+        done();
+      }
+    });
+  });
+  it('should inject append', function(done){
+    app.bind(cr('#inject-test-3'), {
+      init: function(){
+        this.inject({
+          content: '<p data-idx="0"></p>',
+          append: true
+        });
+        this.inject({
+          content: '<p data-idx="1"></p>',
+          append: true
+        });
+        this.inject({
+          content: '<p data-idx="2"></p>',
+          append: true
+        });
+        assert(this.$('p').length === 3);
+        this.$('p').each(function(idx){
+          assert(this.getAttribute('data-idx') == idx);
+        });
+        done();
+      }
+    });
+  });
+  it('should inject prepend', function(done){
+    app.bind(cr('#inject-test-4'), {
+      init: function(){
+        this.inject({
+          content: '<p data-idx="0"></p>',
+          prepend: true
+        });
+        this.inject({
+          content: '<p data-idx="1"></p>',
+          prepend: true
+        });
+        this.inject({
+          content: '<p data-idx="2"></p>',
+          prepend: true
+        });
+        assert(this.$('p').length === 3);
+        this.$('p').each(function(idx){
+          assert(this.getAttribute('data-idx') == (2-idx));
+        });
+        done();
+      }
+    });
+  });
+  it('should inject into sub element', function(done){
+    app.bind(cr('#inject-test-5'), {
+      init: function(){
+        this.$el.html('<div></div>');
+        this.inject({
+          content:'<div></div>',
+          into: 'div'
+        });
+        assert(this.$('div div').length === 1);
+        done();
+      }
+    });
+  });
+  it('should inject append selector', function(done){
+    app.bind(cr('#inject-test-6'), {
+      init: function(){
+        this.$el.html('<ul></ul>');
+        this.inject({
+          content: '<li data-idx="0"></li>',
+          append: 'ul'
+        });
+        this.inject({
+          content: '<li data-idx="1"></li>',
+          append: 'ul'
+        });
+        this.inject({
+          content: '<li data-idx="2"></li>',
+          append: 'ul'
+        });
+        assert(this.$('ul li').length === 3);
+        this.$('ul li').each(function(idx){
+          assert(this.getAttribute('data-idx') == idx);
+        });
+        done();
+      }
+    });
+  });
+  it('should inject prepend selector', function(done){
+    app.bind(cr('#inject-test-7'), {
+      init: function(){
+        this.$el.html('<ul></ul>');
+        this.inject({
+          content: '<li data-idx="0"></li>',
+          prepend: 'ul'
+        });
+        this.inject({
+          content: '<li data-idx="1"></li>',
+          prepend: 'ul'
+        });
+        this.inject({
+          content: '<li data-idx="2"></li>',
+          prepend: 'ul'
+        });
+        assert(this.$('ul li').length === 3);
+        this.$('ul li').each(function(idx){
+          assert(this.getAttribute('data-idx') == (2-idx));
+        });
+        done();
+      }
+    });
+  });
+  it('should inject before', function(done){
+    app.bind(cr('#inject-test-8'), {
+      init: function(){
+        this.$el.html('<p></p>');
+        this.inject({
+          content: '<span></span>',
+          before: 'p'
+        });
+        this.inject({
+          content: '<em></em>',
+          before: 'p'
+        });
+        var els = this.$('p,span,em');
+        assert(els.length === 3);
+        els.each(function(idx){
+          if (idx === 0) assert($(this).is('span'));
+          if (idx === 1) assert($(this).is('em'));
+          if (idx === 2) assert($(this).is('p'));
+        });
+        done();
+      }
+    });
+  });
+  it('should inject after', function(done){
+    app.bind(cr('#inject-test-9'), {
+      init: function(){
+        this.$el.html('<p></p>');
+        this.inject({
+          content: '<span></span>',
+          after: 'p'
+        });
+        this.inject({
+          content: '<em></em>',
+          after: 'p'
+        });
+        var els = this.$('p,span,em');
+        assert(els.length === 3);
+        els.each(function(idx){
+          if (idx === 0) assert($(this).is('p'));
+          if (idx === 1) assert($(this).is('em'));
+          if (idx === 2) assert($(this).is('span'));
+        });
+        done();
+      }
+    });
+  });
+  it('should inject from url', function(done){
+    var worked = false;
+    app.bind('#injectme-test', {
+      init: function(){
+        worked = true;
+      }
+    });
+    app.bind(cr('#inject-test-10'), {
+      init: function(){
+        this.inject({
+          url: '/injectme.html'
+        }, function(err){
+          assert(this.$('#injectme-test').length === 1);
+          assert(worked, 'did not init controller');
+          done();
+        }, this);
+      }
+    });
+  });
+  it('should inject from url with selector', function(done){
+    var worked = false;
+    app.bind('#injectme-test-2', {
+      init: function(){
+        worked = true;
+      }
+    });
+    app.bind(cr('#inject-test-11'), {
+      init: function(){
+        this.inject({
+          url: '/injectme2.html #injectme-test-2'
+        }, function(err){
+          assert(this.$('#injectme-test-2').length === 1);
+          assert(worked, 'did not init controller');
+          done();
+        }, this);
+      }
+    });
+  });
+  it('should inject from url with error', function(done){
+    app.bind(cr('#inject-test-12'), {
+      init: function(){
+        this.inject({
+          url: '/does-not-exist.html #injectme-test-2'
+        }, function(err){
+          assert(err);
+          done();
+        });
+      }
+    });
+  });
+});
+
 describe('Content loading', function(){
   it('should load', function(done){
     app._load('/loadme.html', function(err, doc){

@@ -172,6 +172,72 @@ Controller.prototype = {
     });
   },
 
+  _updateDom: function(opts, content){
+    if (opts.replace){
+      // completely replace this node
+      this.$el.before(content);
+      this.$el.remove();
+      this.app.scan();
+    } else {
+      // mutate the dom subtree of this node
+      if (opts.into){
+        this.$(opts.into).html(content);
+      } else if (opts.before){
+        this.$(opts.before).before(content);
+      } else if (opts.after){
+        this.$(opts.after).after(content);
+      } else if (opts.append){
+        var $el = opts.append === true
+          ? this.$el : this.$(opts.append);
+        $el.append(content);
+      } else if (opts.prepend){
+        var $el = opts.prepend === true
+          ? this.$el : this.$(opts.prepend);
+        $el.prepend(content);
+      } else {
+        this.$el.html(content);
+      }
+      this.scan();
+    }
+  },
+
+  inject: function(opts, callback, ctx){
+    if (opts.content){
+      this._updateDom(opts, opts.content);
+      callback && callback.call(ctx, null);
+    } else if (opts.url){
+      var parts = opts.url.match(/^\s*(\S+)(\s+(.*))?/);
+      var url = parts[1];
+      var sel = parts[3];
+      var self = this;
+      $.ajax(url, {
+        success: function(content){
+          if (sel){
+            content = $(content).find(sel);
+          }
+          self._updateDom(opts, content);
+          callback && callback.call(ctx, null);
+        },
+        error: function(xhr){
+          var message;
+          if (/^4\d\d$/.test(xhr.status)){
+            message = 'Client error, status ' + xhr.status;
+          } else if (/^5\d\d$/.test(xhr.status)){
+            message = 'Server error, status ' + xhr.status;
+          } else {
+            message = 'Error, status ' + xhr.status;
+          }
+          var err = new Error(message);
+          if (callback){
+            callback.call(ctx, err);
+          } else {
+            throw err;
+          }
+        }
+      });
+    }
+  },
+
   load: function(){
     var args = _slice.call(arguments);
     var url = args.shift();
