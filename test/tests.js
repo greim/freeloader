@@ -635,15 +635,16 @@ describe('Injection', function(){
 
 describe('Content loading', function(){
   it('should load', function(done){
-    app._load('/loadme.html', function(err, doc){
+    app._load('/loadme.html', function(err, doc, xhr){
       assert(doc.title === 'Test 1','wrong title');
+      assert(xhr.status === 200, 'wrong status');
       done();
     });
   });
   it('should handle error', function(done){
-    app._load('/missing.html', function(err, doc){
-      assert(err,'missing error');
-      assert(err.status === 404,'wrong status');
+    app._load('/missing.html', function(err, doc, xhr){
+      assert(!err, 'unexpected error');
+      assert(xhr.status === 404, 'wrong status');
       done();
     });
   });

@@ -312,23 +312,9 @@ module.exports = function(_options){
     _options.root = _options.root + '/';
   }
 
-  _errors = {
-    xxx: function(err){
-      alert(err.message);
-    }
-  };
-  function _doError(err){
-    var xxx = 'xxx';
-    var status = err.status === undefined ? '' : err.status + '';
-    if (status.length > 3 || /\D/.test(status)) status = 'xxx';
-    while (status.length < 3) status = '0' + status;
-    for (var i=0; i<4; i++){
-      var key = status.substring(0,3-i) + xxx.substring(3-i, 3);
-      if (_errors.hasOwnProperty(key)){
-        _errors[key](err);
-        return;
-      }
-    }
+  function _pageLoadError(err, url){
+    //debugger;
+    location.href = url;
   }
 
   var _loaded = false;
@@ -584,10 +570,10 @@ module.exports = function(_options){
         this.onPopState(function(ev){
           var url = ev.state ? ev.state.url : location.pathname + location.search;
           _app._load(url, function(err, doc){
-            if (!err){
-              _updatePage(doc);
+            if (err){
+              _pageLoadError(err, url);
             } else {
-              _doError(err);
+              _updatePage(doc);
             }
           });
         });
@@ -654,12 +640,12 @@ module.exports = function(_options){
             var hash = '#' + location.pathname.substring(_options.root.length);
             location.replace(_options.root+location.search + hash);
           } else if (location.hash){
-            var url = _options.root + location.hash.substring(1);
-            _app._load(url + location.search, function(err, doc){
-              if (!err){
-                _updatePage(doc);
+            var url = _options.root + location.hash.substring(1) + location.search;
+            _app._load(url, function(err, doc){
+              if (err){
+                _pageLoadError(err, url);
               } else {
-                _doError(err);
+                _updatePage(doc);
               }
             });
           }
@@ -774,18 +760,19 @@ module.exports = function(_options){
      * });
      */
     _load: function(url, cb, ctx){
-      $.ajax(url, {
+      function handleResponse(){
+        try {
+          var doc = _parser.parse(xhr.responseText);
+          cb.call(ctx, null, doc, xhr);
+        } catch(ex) {
+          cb.call(ctx, ex, null, xhr);
+        }
+      }
+      var xhr = $.ajax(url, {
         type: 'GET',
         dataType: 'html',
-        success: function(html){
-          var doc = _parser.parse(html);
-          cb.call(ctx, null, doc);
-        },
-        error: function(xhr, status, message){
-          var err = new Error('Page fetch returned ' + status + ' for URL ' + url);
-          err.status = xhr.status;
-          cb.call(ctx, err);
-        }
+        success: handleResponse,
+        error: handleResponse
       });
     },
 
@@ -797,27 +784,14 @@ module.exports = function(_options){
         location.href = url;
         return;
       }
-      this._load(url, function(err, doc){
-        if (!err){
+      this._load(url, function(err, doc, xhr){
+        if (err){
+          _pageLoadError(err, url);
+        } else {
           _updatePage(doc);
           _history.pushState({url:url}, url);
-        } else {
-          _doError(err);
         }
       });
-    },
-
-    /**
-     * By default all navigation errors leading to 404s are
-     * handled by one function. Set a custom function for 404,
-     * 4xx, 500, 5xx errors, etc.
-     */
-    setErrorPage: function(status, handler, ctx){
-      status = status+'';
-      if (status.length !== 3 || !/^\d*x*$/.test(status)){
-        throw new Error(status + ' is an invalid status code for error page');
-      }
-      _errors[status] = _.bind(handler, ctx);
     },
 
     scan: _scan,
