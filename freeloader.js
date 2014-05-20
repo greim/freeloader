@@ -526,10 +526,12 @@ module.exports = function(_options){
     var loadedScripts = {};
     var loadedStyleSheets = {};
     $('script[src]').each(function(){
-      loadedScripts[this.src] = true;
+      var url = this.getAttribute('src');
+      loadedScripts[url] = true;
     });
     $('link[type="text/css"][href]').each(function(){
-      loadedStyleSheets[this.href] = true;
+      var url = this.getAttribute('href');
+      loadedStyleSheets[url] = true;
     });
     return function(incomingDoc, callback){
       var $docEl = $(incomingDoc.documentElement);
