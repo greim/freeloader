@@ -793,25 +793,25 @@ module.exports = function(_options){
       });
     },
 
-    on: function(ev, cb, ctx){
+    on: function(eventName, cb, ctx){
       var handlers = this._eventHandlers;
       if (!handlers){
         handlers = this._eventHandlers = {};
       }
-      if (!handlers[ev]){
-        handlers[ev] = [];
+      if (!handlers[eventName]){
+        handlers[eventName] = [];
       }
-      handlers[ev].push({cb:cb,ctx:ctx});
+      handlers[eventName].push({cb:cb,ctx:ctx});
     },
 
-    trigger: function(ev){
+    trigger: function(eventName){
       var handlers = this._eventHandlers;
-      if (!handlers || !handlers[ev]){
+      if (!handlers || !handlers[eventName]){
         return;
       }
       var args = _slice.call(arguments);
       args.shift();
-      handlers.forEach(function(h){
+      handlers[eventName].forEach(function(h){
         h.cb.apply(h.ctx, args);
       });
     },
