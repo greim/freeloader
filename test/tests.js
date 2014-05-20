@@ -649,3 +649,32 @@ describe('Content loading', function(){
     });
   });
 });
+
+describe('Navigation', function(){
+  it('should navigate', function(done){
+    app.navigate('/navigate.html', function(err){
+      assert(window.document.title === 'title foo', 'wrong title');
+      assert(window.document.body.id === 'x', 'wrong body id');
+      var $h1 = $('h1');
+      assert($h1.length === 1, 'unexpected dom structure');
+      assert($h1.text() === 'Test 1', 'unexpected content');
+      done(err);
+    });
+  });
+  it('should execute a script', function(done){
+    app.navigate('/navigate2.html', function(err){
+      assert(window.document.title === 'title foo2', 'wrong title');
+      assert(window.document.body.id === 'y', 'wrong body id');
+      assert(window.navigate2 === 1);
+      done(err);
+    });
+  });
+  it('should not execute a script twice', function(done){
+    app.navigate('/navigate2.html', function(err){
+      assert(window.document.title === 'title foo2', 'wrong title');
+      assert(window.document.body.id === 'y', 'wrong body id');
+      assert(window.navigate2 === 1);
+      done(err);
+    });
+  });
+});

@@ -2,6 +2,18 @@ var _ = require('lodash');
 var $ = require('jquery');
 var _slice = [].slice;
 
+// bind a function to a context, but,
+// returned function must be called
+// twice to execute the function.
+function doubleBack(cb, ctx){
+  if (!cb) return function(){};
+  var db = function(){
+    if (db.called) cb.call(ctx);
+    else db.called = true;
+  };
+  return db;
+}
+
 /**
  * Control a DOM subtree with various event routers:
  *
@@ -314,7 +326,7 @@ module.exports = function(_options){
 
   function _pageLoadError(err, url){
     //debugger;
-    location.href = url;
+    _app.trigger('navigation-error', err, url);
   }
 
   var _loaded = false;
@@ -519,34 +531,37 @@ module.exports = function(_options){
     $('link[type="text/css"][href]').each(function(){
       loadedStyleSheets[this.href] = true;
     });
-    return function(incomingDoc){
+    return function(incomingDoc, callback){
       var $docEl = $(incomingDoc.documentElement);
-      $docEl.find('script').remove().toArray()
-      .map(function(scriptEl){
-        return scriptEl.src;
-      })
-      .filter(function(url){
-        return url && !loadedScripts[url];
-      })
-      .forEach(function(url){
-        $.getScript(url);
-        loadedScripts[url] = true;
+      var loads = [];
+      $docEl.find('script[src]').each(function(){
+        var url = this.getAttribute('src');
+        if (!loadedScripts[url]){
+          $(this).remove();
+          loads.push($.getScript(url));
+          loadedScripts[url] = true;
+        }
       });
-      $docEl.find('link[type="text/css"][href]').remove()
-      .filter(function(){
-        var url = this.href;
-        return url && !loadedStyleSheets[url];
-      })
-      .each(function(){
-        var url = this.href;
-        $('head').append(this);
-        loadedStyleSheets[url] = true;
+      $docEl.find('link[rel="stylesheet"][href]').each(function(){
+        var url = this.getAttribute('href');
+        if (!loadedStyleSheets[url]){
+          $(this).remove().appendTo('head');
+          loadedStyleSheets[url] = true;
+        }
       });
+      if (loads.length > 0){
+        $.when.apply($, loads).done(function(){
+          callback();
+        });
+      } else {
+        callback();
+      }
     };
   })();
 
-  function _updatePage(newDoc){
-    processCssJs(newDoc);
+  function _updatePage(newDoc, callback){
+    callback = doubleBack(callback);
+    processCssJs(newDoc, callback);
     var oldDoc = document;
     oldDoc.title = newDoc.title;
     var newBody = newDoc.body;
@@ -555,6 +570,7 @@ module.exports = function(_options){
     oldBody.parentNode.removeChild(oldBody);
     oldDoc.documentElement.appendChild(newBody);
     _app.scan(oldDoc);
+    callback();
   }
 
   // ########################################################################
@@ -762,6 +778,7 @@ module.exports = function(_options){
     _load: function(url, cb, ctx){
       function handleResponse(){
         try {
+          if (!xhr.status) throw new Error('failed request');
           var doc = _parser.parse(xhr.responseText);
           cb.call(ctx, null, doc, xhr);
         } catch(ex) {
@@ -776,10 +793,33 @@ module.exports = function(_options){
       });
     },
 
+    on: function(ev, cb, ctx){
+      var handlers = this._eventHandlers;
+      if (!handlers){
+        handlers = this._eventHandlers = {};
+      }
+      if (!handlers[ev]){
+        handlers[ev] = [];
+      }
+      handlers[ev].push({cb:cb,ctx:ctx});
+    },
+
+    trigger: function(ev){
+      var handlers = this._eventHandlers;
+      if (!handlers || !handlers[ev]){
+        return;
+      }
+      var args = _slice.call(arguments);
+      args.shift();
+      handlers.forEach(function(h){
+        h.cb.apply(h.ctx, args);
+      });
+    },
+
     /**
      * Go to a new page URL using XHR to quickly load the page.
      */
-    navigate: function(url){
+    navigate: function(url, callback, ctx){
       if (url.indexOf(_options.root) !== 0){
         location.href = url;
         return;
@@ -788,8 +828,10 @@ module.exports = function(_options){
         if (err){
           _pageLoadError(err, url);
         } else {
-          _updatePage(doc);
+          callback = doubleBack(callback, ctx);
+          _updatePage(doc, callback);
           _history.pushState({url:url}, url);
+          callback();
         }
       });
     },

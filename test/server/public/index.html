@@ -9,7 +9,8 @@
   <body>
     <div id="mocha"></div>
     <script src="javascripts/mocha.js"></script>
-    <script>mocha.setup('bdd')</script>
+    <script src="javascripts/WebConsole.js"></script>
+    <script>mocha.setup({ui:'bdd',reporter:WebConsole})</script>
     <script src="generated/tests-bundle.js"></script>
     <script>
       mocha.run();
