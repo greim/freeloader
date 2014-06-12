@@ -1,6 +1,7 @@
 var _ = require('lodash');
 var $ = require('jquery');
 var _slice = [].slice;
+var await = require('await');
 
 // bind a function to a context, but,
 // returned function must be called
@@ -547,7 +548,7 @@ module.exports = function(_options){
   /*
    * Executes any new css/scripts in an incoming document.
    */
-  var processCssJs = (function(){
+  var _processCssJs = (function(){
     var loadedScripts = {};
     var loadedStyleSheets = {};
     $('script[src]').each(function(){
@@ -588,7 +589,7 @@ module.exports = function(_options){
 
   function _updatePage(newDoc, callback){
     callback = doubleBack(callback);
-    processCssJs(newDoc, callback);
+    _processCssJs(newDoc, callback);
     var oldDoc = document;
     oldDoc.title = newDoc.title;
     var newBody = newDoc.body;
