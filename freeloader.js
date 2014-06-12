@@ -35,10 +35,11 @@ function doubleBack(cb, ctx){
  * called from within controllers.
  */
 function Controller(el, app){
+  this.app = app;
+  this.init();
   var $el = $(el);
   this.el = el;
   this.$el = $el;
-  this.app = app;
   _.each(this.events, function(action, key){
     var matches = key.match(/^\s*(\S+)(\s+(.+))?$/i);
     if (!matches) {
@@ -83,8 +84,15 @@ Controller.prototype = {
 
   /*
    * This can be overridden.
+   * It runs at instantiation time, before attached to an element.
    */
   init: function(){},
+
+  /*
+   * This can be overridden.
+   * It runs after attached to an element.
+   */
+  mount: function(){},
 
   _sanitize: function(content){
     var $cntnt = $(content);
@@ -176,7 +184,13 @@ Controller.prototype = {
           return;
         } else {
           if (handlers.hasOwnProperty(type)){
-            that[handlers[type]].apply(that, args);
+            try {
+              that[handlers[type]].apply(that, args);
+            } catch(ex) {
+              setTimeout(function(){
+                throw ex;
+              },0);
+            }
           }
         }
       });
@@ -194,6 +208,8 @@ Controller.prototype = {
       // mutate the dom subtree of this node
       if (opts.into){
         this.$(opts.into).html(content);
+      } else if (opts.onto){
+        this.$(opts.onto).replaceWith(content);
       } else if (opts.before){
         this.$(opts.before).before(content);
       } else if (opts.after){
@@ -403,7 +419,16 @@ module.exports = function(_options){
       }
     }
     controllers && _.each(controllers, function(controller){
-      controller.init();
+      try {
+        controller.mount();
+      } catch(ex) {
+        setTimeout(function(){
+          // throw from within a timeout in order to prevent
+          // it from screwing up everyone else's stuff but
+          // still show it in developer console
+          throw ex;
+        });
+      }
     });
   }
 
@@ -571,6 +596,7 @@ module.exports = function(_options){
     var oldBody = oldDoc.body;
     oldBody.parentNode.removeChild(oldBody);
     oldDoc.documentElement.appendChild(newBody);
+    $('[autofocus]').eq(0).focus();
     _app.scan(oldDoc);
     callback();
   }
@@ -630,6 +656,9 @@ module.exports = function(_options){
             }
             return callback.apply(this, arguments);
           });
+        },
+        getFragment: function(){
+          return '/' + (location.pathname + location.search).replace(/^\//,'');
         }
       });
     } else {
@@ -688,6 +717,9 @@ module.exports = function(_options){
         },
         onPopState: function(callback, ctx){
           callbacks.push(_.bind(callback, ctx));
+        },
+        getFragment: function(){
+          return '/' + (location.hash + location.search).replace(/^#/,'');
         }
       });
     }
@@ -759,7 +791,13 @@ module.exports = function(_options){
         _.each(tag, function(controller){
           var subs = controller.subs;
           if (subs && subs[type]) {
-            controller[subs[type]].apply(controller, args);
+            try {
+              controller[subs[type]].apply(controller, args);
+            } catch(ex) {
+              setTimeout(function(){
+                throw ex;
+              },0)
+            }
           }
         });
       }
@@ -787,7 +825,11 @@ module.exports = function(_options){
           cb.call(ctx, ex, null, xhr);
         }
       }
-      var xhr = $.ajax(url, {
+      // prevent an older fetch from clobbering a newer fetch
+      if (_app._fetch && _app._fetch.readyState !== 4){
+        _app._fetch.abort();
+      }
+      var xhr = _app._fetch = $.ajax(url, {
         type: 'GET',
         dataType: 'html',
         success: handleResponse,
@@ -828,14 +870,20 @@ module.exports = function(_options){
       }
       this._load(url, function(err, doc, xhr){
         if (err){
-          _pageLoadError(err, url);
+          callback(err);
         } else {
           callback = doubleBack(callback, ctx);
           _updatePage(doc, callback);
+          window.scrollTo(0,0);
           _history.pushState({url:url}, url);
           callback();
         }
       });
+    },
+
+    reload: function(callback, ctx){
+      var url = _history.getFragment();
+      this.navigate(url, callback, ctx);
     },
 
     scan: _scan,
