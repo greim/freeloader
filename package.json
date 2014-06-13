@@ -6,9 +6,6 @@
   "directories": {
     "test": "test"
   },
-  "browser": {
-    "jquery": "./lib/jquery.js"
-  },
   "scripts": {
     "test": "test"
   },
@@ -23,8 +20,9 @@
   },
   "homepage": "https://github.com/greim/freeloader",
   "dependencies": {
-    "await": "~0.2.3",
-    "lodash": "^2.4.1"
+    "await": "^0.2.3",
+    "lodash": "^2.4.1",
+    "jquery": "^2.1.1"
   },
   "devDependencies": {
     "vinyl-source-stream": "^0.1.1",
