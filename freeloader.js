@@ -75,7 +75,7 @@ module.exports = function(){
     }
     controllers && _.each(controllers, function(controller){
       try {
-        controller.mount();
+        controller._run('life','mount');
       } catch(ex) {
         throwLater(ex);
       }
@@ -126,13 +126,10 @@ module.exports = function(){
       for (var i=0, len=subscribingEls.length; i<len; i++){
         var tag = subscribingEls[i][tag];
         _.each(tag, function(controller){
-          var subs = controller.subs;
-          if (subs && subs[type]) {
-            try {
-              controller[subs[type]].apply(controller, args);
-            } catch(ex) {
-              throwLater(ex);
-            }
+          try {
+            controller._run('subs', type, args);
+          } catch(ex) {
+            throwLater(ex);
           }
         });
       }
