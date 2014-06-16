@@ -39,12 +39,6 @@ var makeClassForSubs = (function(){
   };
 })();
 
-function throwLater(ex){
-  setTimeout(function(){
-    throw ex;
-  },0);
-}
-
 module.exports = function(){
 
   var bindings = [];
@@ -59,7 +53,7 @@ module.exports = function(){
         var el = $list[j];
         var $el = $(el);
         if (el[tag] === undefined){
-          var tag = el[tag] = {};
+          el[tag] = {};
           $el.addClass(tagClass);
         }
         if (!el[tag].hasOwnProperty(binding.id)){
@@ -74,11 +68,7 @@ module.exports = function(){
       }
     }
     controllers && _.each(controllers, function(controller){
-      try {
-        controller._run('life','mount');
-      } catch(ex) {
-        throwLater(ex);
-      }
+      controller._run('life','mount');
     });
   }
 
@@ -124,13 +114,9 @@ module.exports = function(){
       var type = args[0].type;
       var subscribingEls = getElementsBySubsClass(type);
       for (var i=0, len=subscribingEls.length; i<len; i++){
-        var tag = subscribingEls[i][tag];
-        _.each(tag, function(controller){
-          try {
-            controller._run('subs', type, args);
-          } catch(ex) {
-            throwLater(ex);
-          }
+        var tagObj = subscribingEls[i][tag];
+        _.each(tagObj, function(controller){
+          controller._run('subs', type, args);
         });
       }
     },
@@ -191,7 +177,11 @@ module.exports = function(){
 
     scan: scan,
     _tag: tag,
-    _tagClass: tagClass
+    _tagClass: tagClass,
+    _reset: function(){
+      // only to support testing
+      bindings.length = 0;
+    }
   };
 
   history.onPop(function(url){
