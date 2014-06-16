@@ -1159,6 +1159,54 @@ describe('Navigation', function(){
       done(err);
     });
   });
+
+  it('should show title', function(done){
+    assert.ok(document.title !== 'title foo')
+    app.navigate('/navigate.html', function(err){
+      assert.strictEqual('title foo', document.title)
+      done(err);
+    });
+  });
+
+  it('should update content', function(done){
+    assert.strictEqual(0, $('h1').length)
+    app.navigate('/navigate.html', function(err){
+      assert.strictEqual('Test 1', $('h1').text())
+      done(err);
+    });
+  });
+
+  it('should autofocus', function(done){
+    app.navigate('/navigate.html', function(err){
+      assert.strictEqual(document.activeElement, $('button').get(0))
+      done(err);
+    });
+  });
+
+  it('should run a script', function(done){
+    assert.strictEqual(undefined, window.navigate2)
+    app.navigate('/navigate2.html', function(err){
+      assert.strictEqual(1, window.navigate2);
+      done(err);
+    });
+  });
+
+  it('should not run a script twice', function(done){
+    assert.strictEqual(1, window.navigate2)
+    app.navigate('/navigate2.html', function(err){
+      assert.strictEqual(1, window.navigate2);
+      done(err);
+    });
+  });
+
+  it('should fail silently on abort', function(done){
+    app.navigate('/navigate.html', function(err){
+      done(new Error('did not fail silently'));
+    });
+    app.navigate('/navigate.html', function(err){
+      done(err);
+    });
+  });
 });
 
 

@@ -181,6 +181,7 @@ module.exports = function(){
     _reset: function(){
       // only to support testing
       bindings.length = 0;
+      delete this._handlers;
     }
   };
 
