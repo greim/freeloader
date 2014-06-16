@@ -156,10 +156,10 @@ module.exports = function(){
       if (history.works()){
         loader.loadPage(opts, function(err){
           if (err){
-            cb.call(ctx, err);
+            callback.call(ctx, err);
           } else {
             history[opts.replace ? 'replace' : 'push'](opts.url);
-            cb.call(ctx, null);
+            callback.call(ctx, null);
           }
         });
       } else {

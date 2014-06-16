@@ -747,286 +747,423 @@ describe('Controller downward messaging', function(){
   });
 });
 
-describe.skip('Injection', function(){
-  it('should inject replace', function(done){
-    app.bind('.inject-test-1-updated', {
-      life: { mount: 'mount' },
-      mount: function(){
-        done();
-      }
+describe('Controller injection', function(){
+
+  describe('replace', function(){
+
+    it('should replace true', function(done){
+      $('body').append('<div id="test"></div>');
+      var mounted = false;
+      app.bind('.injected', {
+        life: { mount: 'mount' },
+        mount: function(){
+          mounted = true;
+        }
+      });
+      app.bind('#test', {
+        life: { mount: 'mount' },
+        mount: function(){
+          var parentNode = this.el.parentNode;
+          this.inject({
+            html: '<span class="injected"></span>',
+            replace: true
+          }, function(err){
+            assert.ok(!$.contains(parentNode, this.el))
+            assert.strictEqual(1, $(parentNode).find('.injected').length)
+            assert.ok(mounted)
+            done(err)
+          }, this);
+        }
+      });
+    })
+
+    it('should replace selector', function(done){
+      $('body').append('<div id="test"><span></span></div>');
+      var mounted = false;
+      app.bind('.injected', {
+        life: { mount: 'mount' },
+        mount: function(){
+          mounted = true;
+        }
+      });
+      app.bind('#test', {
+        life: { mount: 'mount' },
+        mount: function(){
+          this.inject({
+            html: '<em class="injected"></em>',
+            replace: 'span'
+          }, function(err){
+            assert.strictEqual(1, this.$('.injected').length);
+            assert.ok(mounted)
+            done(err)
+          }, this);
+        }
+      });
+    })
+  });
+
+  describe('into', function(){
+
+    it('should inject into true', function(done){
+      $('body').append('<div id="test"></div>');
+      var mounted = false;
+      app.bind('.injected', {
+        life: { mount: 'mount' },
+        mount: function(){
+          mounted = true;
+        }
+      });
+      app.bind('#test', {
+        life: { mount: 'mount' },
+        mount: function(){
+          this.inject({
+            html: '<span class="injected"></span>',
+            into: true
+          }, function(err){
+            assert.strictEqual(1, this.$('.injected').length);
+            assert.ok(mounted)
+            done(err)
+          }, this)
+        }
+      });
     });
-    app.bind(cr('#inject-test-1'), {
-      life: { mount: 'mount' },
-      mount: function(){
-        this.inject({
-          html: '<div class="inject-test-1-updated"></div>',
-          replace: true
-        }, function(err){
-          if (err) done(err);
-          assert.strictEqual($('.inject-test-1-updated').length, 1);
-        });
-      }
+
+    it('should inject into selector', function(done){
+      $('body').append('<div id="test"><em></em></div>');
+      var mounted = false;
+      app.bind('.injected', {
+        life: { mount: 'mount' },
+        mount: function(){
+          mounted = true;
+        }
+      });
+      app.bind('#test', {
+        life: { mount: 'mount' },
+        mount: function(){
+          this.inject({
+            html: '<span class="injected"></span>',
+            into: 'em'
+          }, function(err){
+            assert.strictEqual(1, this.$('em .injected').length);
+            assert.ok(mounted)
+            done(err)
+          }, this)
+        }
+      });
     });
   });
-  it('should inject into', function(done){
-    app.bind('#inject-test-2-updated', {
-      life: { mount: 'mount' },
-      mount: function(){
-        done();
-      }
+
+  describe('before', function(){
+
+    it('should inject before true', function(done){
+      $('body').append('<div id="test"></div>');
+      var mounted = false;
+      app.bind('.injected', {
+        life: { mount: 'mount' },
+        mount: function(){
+          mounted = true
+        }
+      });
+      app.bind('#test', {
+        life: { mount: 'mount' },
+        mount: function(){
+          this.inject({
+            html: '<span class="injected"></span>',
+            before: true
+          }, function(err){
+            assert.ok(this.$el.prev().is('.injected'));
+            assert.ok(mounted)
+            done(err)
+          }, this)
+        }
+      });
     });
-    app.bind(cr('#inject-test-2'), {
-      life: { mount: 'mount' },
-      mount: function(){
-        this.inject({
-          html:'<div id="inject-test-2-updated"></div>',
-          into: true
-        }, function(err){
-          if (err) done(err);
-          assert.ok(this.$('div').length === 1);
-        });
-      }
-    });
-  });
-  it('should inject append', function(done){
-    app.bind(cr('#inject-test-3'), {
-      life: { mount: 'mount' },
-      mount: function(){
-        this.inject({
-          html: '<p data-idx="0"></p>',
-          append: true
-        }, function(err){
-          assert.ok(this.$('p').length === 1);
-          done(err);
-        });
-      }
-    });
-  });
-  it('should inject prepend', function(done){
-    app.bind(cr('#inject-test-3'), {
-      life: { mount: 'mount' },
-      mount: function(){
-        this.inject({
-          html: '<p data-idx="0"></p>',
-          prepend: true
-        }, function(err){
-          assert.ok(this.$('p').length === 1);
-          done(err);
-        });
-      }
-    });
-  });
-  it('should inject into sub element', function(done){
-    app.bind(cr('#inject-test-5'), {
-      life: { mount: 'mount' },
-      mount: function(){
-        this.$el.html('<div></div>');
-        this.inject({
-          html:'<div></div>',
-          into: 'div'
-        });
-        assert.ok(this.$('div div').length === 1);
-        done();
-      }
+
+    it('should inject before selector', function(done){
+      $('body').append('<div id="test"><em></em></div>');
+      var mounted = false;
+      app.bind('.injected', {
+        life: { mount: 'mount' },
+        mount: function(){
+          mounted = true
+        }
+      });
+      app.bind('#test', {
+        life: { mount: 'mount' },
+        mount: function(){
+          this.inject({
+            html: '<span class="injected"></span>',
+            before: 'em'
+          }, function(err){
+            assert.ok(this.$el.children().eq(0).is('.injected'));
+            assert.ok(this.$el.children().eq(1).is('em'));
+            assert.ok(mounted)
+            done(err)
+          }, this)
+        }
+      });
     });
   });
-  it('should inject append selector', function(done){
-    app.bind(cr('#inject-test-6'), {
-      life: { mount: 'mount' },
-      mount: function(){
-        this.$el.html('<ul></ul>');
-        this.inject({
-          html: '<li data-idx="0"></li>',
-          append: 'ul'
-        });
-        this.inject({
-          html: '<li data-idx="1"></li>',
-          append: 'ul'
-        });
-        this.inject({
-          html: '<li data-idx="2"></li>',
-          append: 'ul'
-        });
-        assert.ok(this.$('ul li').length === 3);
-        this.$('ul li').each(function(idx){
-          assert.ok(this.getAttribute('data-idx') == idx);
-        });
-        done();
-      }
+
+  describe('after', function(){
+
+    it('should inject after true', function(done){
+      $('body').append('<div id="test"></div>');
+      var mounted = false;
+      app.bind('.injected', {
+        life: { mount: 'mount' },
+        mount: function(){
+          mounted = true
+        }
+      });
+      app.bind('#test', {
+        life: { mount: 'mount' },
+        mount: function(){
+          this.inject({
+            html: '<span class="injected"></span>',
+            after: true
+          }, function(err){
+            assert.ok(this.$el.next().is('.injected'));
+            assert.ok(mounted)
+            done(err)
+          }, this)
+        }
+      });
+    });
+
+    it('should inject after selector', function(done){
+      $('body').append('<div id="test"><em></em></div>');
+      var mounted = false;
+      app.bind('.injected', {
+        life: { mount: 'mount' },
+        mount: function(){
+          mounted = true
+        }
+      });
+      app.bind('#test', {
+        life: { mount: 'mount' },
+        mount: function(){
+          this.inject({
+            html: '<span class="injected"></span>',
+            after: 'em'
+          }, function(err){
+            assert.ok(this.$el.children().eq(0).is('em'));
+            assert.ok(this.$el.children().eq(1).is('.injected'));
+            assert.ok(mounted)
+            done(err)
+          }, this)
+        }
+      });
     });
   });
-  it('should inject prepend selector', function(done){
-    app.bind(cr('#inject-test-7'), {
-      life: { mount: 'mount' },
-      mount: function(){
-        this.$el.html('<ul></ul>');
-        this.inject({
-          html: '<li data-idx="0"></li>',
-          prepend: 'ul'
-        });
-        this.inject({
-          html: '<li data-idx="1"></li>',
-          prepend: 'ul'
-        });
-        this.inject({
-          html: '<li data-idx="2"></li>',
-          prepend: 'ul'
-        });
-        assert.ok(this.$('ul li').length === 3);
-        this.$('ul li').each(function(idx){
-          assert.ok(this.getAttribute('data-idx') == (2-idx));
-        });
-        done();
-      }
+
+  describe('prepend', function(){
+
+    it('should inject prepend true', function(done){
+      $('body').append('<div id="test"><br></div>');
+      var mounted = false;
+      app.bind('.injected', {
+        life: { mount: 'mount' },
+        mount: function(){
+          mounted = true
+        }
+      });
+      app.bind('#test', {
+        life: { mount: 'mount' },
+        mount: function(){
+          this.inject({
+            html: '<span class="injected"></span>',
+            prepend: true
+          }, function(err){
+            assert.ok(this.$el.children().eq(0).is('.injected'));
+            assert.ok(this.$el.children().eq(1).is('br'));
+            assert.ok(mounted)
+            done(err)
+          }, this)
+        }
+      });
+    });
+
+    it('should inject prepend selector', function(done){
+      $('body').append('<div id="test"><em><br></em></div>');
+      var mounted = false;
+      app.bind('.injected', {
+        life: { mount: 'mount' },
+        mount: function(){
+          mounted = true
+        }
+      });
+      app.bind('#test', {
+        life: { mount: 'mount' },
+        mount: function(){
+          this.inject({
+            html: '<span class="injected"></span>',
+            prepend: 'em'
+          }, function(err){
+            assert.ok(this.$('em').children().eq(0).is('.injected'));
+            assert.ok(this.$('em').children().eq(1).is('br'));
+            assert.ok(mounted)
+            done(err)
+          }, this)
+        }
+      });
     });
   });
-  it('should inject before', function(done){
-    app.bind(cr('#inject-test-8'), {
-      life: { mount: 'mount' },
-      mount: function(){
-        this.$el.html('<p></p>');
-        this.inject({
-          html: '<span></span>',
-          before: 'p'
-        });
-        this.inject({
-          html: '<em></em>',
-          before: 'p'
-        });
-        var els = this.$('p,span,em');
-        assert.ok(els.length === 3);
-        els.each(function(idx){
-          if (idx === 0) assert.ok($(this).is('span'));
-          if (idx === 1) assert.ok($(this).is('em'));
-          if (idx === 2) assert.ok($(this).is('p'));
-        });
-        done();
-      }
+
+  describe('append', function(){
+
+    it('should inject append true', function(done){
+      $('body').append('<div id="test"><br></div>');
+      var mounted = false;
+      app.bind('.injected', {
+        life: { mount: 'mount' },
+        mount: function(){
+          mounted = true
+        }
+      });
+      app.bind('#test', {
+        life: { mount: 'mount' },
+        mount: function(){
+          this.inject({
+            html: '<span class="injected"></span>',
+            append: true
+          }, function(err){
+            assert.ok(this.$el.children().eq(0).is('br'));
+            assert.ok(this.$el.children().eq(1).is('.injected'));
+            assert.ok(mounted)
+            done(err)
+          }, this)
+        }
+      });
+    });
+
+    it('should inject append selector', function(done){
+      $('body').append('<div id="test"><em><br></em></div>');
+      var mounted = false;
+      app.bind('.injected', {
+        life: { mount: 'mount' },
+        mount: function(){
+          mounted = true
+        }
+      });
+      app.bind('#test', {
+        life: { mount: 'mount' },
+        mount: function(){
+          this.inject({
+            html: '<span class="injected"></span>',
+            append: 'em'
+          }, function(err){
+            assert.ok(this.$('em').children().eq(0).is('br'));
+            assert.ok(this.$('em').children().eq(1).is('.injected'));
+            assert.ok(mounted)
+            done(err)
+          }, this)
+        }
+      });
     });
   });
-  it('should inject after', function(done){
-    app.bind(cr('#inject-test-9'), {
-      life: { mount: 'mount' },
-      mount: function(){
-        this.$el.html('<p></p>');
-        this.inject({
-          html: '<span></span>',
-          after: 'p'
-        });
-        this.inject({
-          html: '<em></em>',
-          after: 'p'
-        });
-        var els = this.$('p,span,em');
-        assert.ok(els.length === 3);
-        els.each(function(idx){
-          if (idx === 0) assert.ok($(this).is('p'));
-          if (idx === 1) assert.ok($(this).is('em'));
-          if (idx === 2) assert.ok($(this).is('span'));
-        });
-        done();
-      }
+
+  describe('url', function(){
+
+    it('should inject from url', function(done){
+      $('body').append('<div id="test"></div>');
+      app.bind('#test', {
+        life: { mount: 'mount' },
+        mount: function(){
+          this.inject({
+            url: '/injectme.html',
+            into: true
+          }, function(err){
+            assert.strictEqual(1, this.$('.injected').length);
+            done(err)
+          }, this)
+        }
+      });
+    });
+
+    it('should inject from url and selector', function(done){
+      $('body').append('<div id="test"></div>');
+      app.bind('#test', {
+        life: { mount: 'mount' },
+        mount: function(){
+          this.inject({
+            url: '/injectme.html span',
+            into: true
+          }, function(err){
+            assert.strictEqual(1, this.$('span').length);
+            done(err)
+          }, this)
+        }
+      });
     });
   });
-  it('should inject from url', function(done){
-    var worked = false;
-    app.bind('#injectme-test', {
-      life: { mount: 'mount' },
-      mount: function(){
-        worked = true;
-      }
+
+  describe('errors', function(){
+
+    it('should require target', function(done){
+      $('body').append('<div id="test"></div>');
+      app.bind('#test', {
+        life: { mount: 'mount' },
+        mount: function(){
+          this.inject({
+            html: '<br>'
+          }, function(err){
+            assert.ok(err);
+            done()
+          }, this)
+        }
+      });
     });
-    app.bind(cr('#inject-test-10'), {
-      life: { mount: 'mount' },
-      mount: function(){
-        this.inject({
-          url: '/injectme.html'
-        }, function(err){
-          assert.ok(this.$('#injectme-test').length === 1);
-          assert.ok(worked, 'did not mount controller');
-          done();
-        }, this);
-      }
+
+    it('should require source', function(done){
+      $('body').append('<div id="test"></div>');
+      app.bind('#test', {
+        life: { mount: 'mount' },
+        mount: function(){
+          this.inject({
+            into: true
+          }, function(err){
+            assert.ok(err);
+            done()
+          }, this)
+        }
+      });
     });
-  });
-  it('should inject from url with selector', function(done){
-    var worked = false;
-    app.bind('#injectme-test-2', {
-      life: { mount: 'mount' },
-      mount: function(){
-        worked = true;
-      }
-    });
-    app.bind(cr('#inject-test-11'), {
-      life: { mount: 'mount' },
-      mount: function(){
-        this.inject({
-          url: '/injectme2.html #injectme-test-2'
-        }, function(err){
-          assert.ok(this.$('#injectme-test-2').length === 1);
-          assert.ok(worked, 'did not mount controller');
-          done();
-        }, this);
-      }
-    });
-  });
-  it('should inject from url with error', function(done){
-    app.bind(cr('#inject-test-12'), {
-      life: { mount: 'mount' },
-      mount: function(){
-        this.inject({
-          url: '/does-not-exist.html #injectme-test-2'
-        }, function(err){
-          assert.ok(err);
-          done();
-        });
-      }
+
+    it('should fail on not found', function(done){
+      $('body').append('<div id="test"></div>');
+      app.bind('#test', {
+        life: { mount: 'mount' },
+        mount: function(){
+          this.inject({
+            url: '/fake.html',
+            into: true
+          }, function(err){
+            assert.ok(err);
+            done()
+          }, this)
+        }
+      });
     });
   });
 });
 
-describe.skip('Content loading', function(){
-  it('should load', function(done){
-    app._load('/loadme.html', function(err, doc, xhr){
-      assert.ok(doc.title === 'Test 1','wrong title');
-      assert.ok(xhr.status === 200, 'wrong status');
-      done();
-    });
-  });
-  it('should handle error', function(done){
-    app._load('/missing.html', function(err, doc, xhr){
-      assert.ok(!err, 'unexpected error');
-      assert.ok(xhr.status === 404, 'wrong status');
-      done();
-    });
-  });
-});
+describe('Navigation', function(){
 
-describe.skip('Navigation', function(){
+  afterEach(function(){
+    window.history.replaceState({}, '', '/');
+  });
+
   it('should navigate', function(done){
     app.navigate('/navigate.html', function(err){
-      assert.ok(window.document.title === 'title foo', 'wrong title');
-      assert.ok(window.document.body.id === 'x', 'wrong body id');
-      var $h1 = $('h1');
-      assert.ok($h1.length === 1, 'unexpected dom structure');
-      assert.ok($h1.text() === 'Test 1', 'unexpected content');
-      done(err);
-    });
-  });
-  it('should execute a script', function(done){
-    app.navigate('/navigate2.html', function(err){
-      assert.ok(window.document.title === 'title foo2', 'wrong title');
-      assert.ok(window.document.body.id === 'y', 'wrong body id');
-      assert.ok(window.navigate2 === 1);
-      done(err);
-    });
-  });
-  it('should not execute a script twice', function(done){
-    app.navigate('/navigate2.html', function(err){
-      assert.ok(window.document.title === 'title foo2', 'wrong title');
-      assert.ok(window.document.body.id === 'y', 'wrong body id');
-      assert.ok(window.navigate2 === 1);
       done(err);
     });
   });
 });
+
+
+
+
+
+
+
