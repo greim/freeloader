@@ -1253,10 +1253,14 @@ describe('Navigation', function(){
     });
   });
 
-  it.skip('should go back', function(done){
+  it('should go back', function(done){
     app.navigate('/navigate.html', function(err){
       app.navigate('/fake.html', function(err){
-        history.back();
+        app.back(function(err){
+          assert.equal('title foo', document.title);
+          assert.equal('/navigate.html', location.pathname);
+          done();
+        });
       });
     });
   });

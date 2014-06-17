@@ -132,6 +132,22 @@ module.exports = function(){
       handlers[eventName].push({cb:cb,ctx:ctx});
     },
 
+    off: function(eventName, cb){
+      if (!this._handlers || !this._handlers[eventName]){
+        return;
+      }
+      this._handlers[eventName] = this._handlers[eventName].filter(function(item){
+        return cb !== item.cb;
+      });
+    },
+
+    one: function(eventName, cb, ctx){
+      this.on(eventName, function(){
+        this.off(eventName, cb);
+        cb.apply(ctx, arguments);
+      }, this);
+    },
+
     trigger: function(eventName){
       var handlers = this._handlers;
       if (!handlers || !handlers[eventName]){
@@ -176,6 +192,11 @@ module.exports = function(){
       this.navigate({replace:true}, callback, ctx);
     },
 
+    back: function(callback, ctx){
+      this.one('back', callback, ctx);
+      window.history.back();
+    },
+
     scan: scan,
     _tag: tag,
     _tagClass: tagClass,
@@ -188,9 +209,7 @@ module.exports = function(){
 
   history.onPop(function(url){
     loader.loadPage(url, function(err){
-      if (err){
-        app.trigger('history-error');
-      }
+      app.trigger('back', err, url);
     });
   });
 
