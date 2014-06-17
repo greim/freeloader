@@ -1266,6 +1266,99 @@ describe('Navigation', function(){
   });
 });
 
+describe('Events', function(){
+
+  it('should work', function(done){
+    app.on('foo', function(){
+      done();
+    });
+    app.trigger('foo');
+  });
+
+  it('should work synchronously', function(){
+    var ran = false;
+    app.on('foo', function(){
+      ran = true;
+    });
+    app.trigger('foo');
+    assert.ok(ran)
+  });
+
+  it('should pass this', function(done){
+    var ctx = {};
+    app.on('foo', function(){
+      assert.strictEqual(ctx, this);
+      done()
+    }, ctx);
+    app.trigger('foo');
+  });
+
+  it('should pass args', function(done){
+    var ctx = {};
+    app.on('foo', function(a1, a2){
+      assert.strictEqual(0, a1);
+      assert.strictEqual(false, a2);
+      done()
+    }, ctx);
+    app.trigger('foo', 0, false);
+  });
+
+  it('should work multiple', function(done){
+    car called = 0;
+    app.on('foo', function(){
+      called++;
+    });
+    app.trigger('foo');
+    app.trigger('foo');
+    assert.strictEqual(2, called)
+  });
+
+  it('one should work', function(done){
+    app.one('foo', function(){
+      done();
+    });
+    app.trigger('foo');
+  });
+
+  it('one should work synchronously', function(){
+    var ran = false;
+    app.one('foo', function(){
+      ran = true;
+    });
+    app.trigger('foo');
+    assert.ok(ran)
+  });
+
+  it('one should pass this', function(done){
+    var ctx = {};
+    app.one('foo', function(){
+      assert.strictEqual(ctx, this);
+      done()
+    }, ctx);
+    app.trigger('foo');
+  });
+
+  it('one should pass args', function(done){
+    var ctx = {};
+    app.one('foo', function(a1, a2){
+      assert.strictEqual(0, a1);
+      assert.strictEqual(false, a2);
+      done()
+    }, ctx);
+    app.trigger('foo', 0, false);
+  });
+
+  it('one should not work multiple', function(done){
+    car called = 0;
+    app.one('foo', function(){
+      called++;
+    });
+    app.trigger('foo');
+    app.trigger('foo');
+    assert.strictEqual(1, called)
+  });
+});
+
 
 
 
