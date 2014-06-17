@@ -212,6 +212,7 @@ module.exports = function(){
 
   history.onPop(function(url){
     loader.loadPage(url, function(err){
+      app.scan();
       app.trigger('back', err, url);
     });
   });

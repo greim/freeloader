@@ -1266,17 +1266,21 @@ describe('Navigation', function(){
   });
 
   it('should rescan after back', function(done){
+    var count = 0;
+    app.bind('h1.the-heading', {
+      life: { init: 'init' },
+      init: function(){
+        assert.equal('/navigate.html', location.pathname);
+        assert.equal('title foo', document.title);
+        count++;
+        if (count === 2){
+          done();
+        }
+      }
+    });
     app.navigate('/navigate.html', function(err){
       app.navigate('/fake.html', function(err){
         app.back(function(err){
-          app.bind('h1.the-heading', {
-            life: { init: 'init' },
-            init: function(){
-              assert.equal('/navigate.html', location.pathname);
-              assert.equal('title foo', document.title);
-              done();
-            }
-          });
         });
       });
     });
