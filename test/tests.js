@@ -1216,7 +1216,7 @@ describe('Navigation', function(){
     });
   });
 
-  it.only('should work for 404 not found', function(done){
+  it('should work for 404 not found', function(done){
     document.title = 'x';
     app.navigate('/fake.html', function(err){
       assert.ok(document.title !== 'x');
