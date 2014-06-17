@@ -1168,6 +1168,14 @@ describe('Navigation', function(){
     });
   });
 
+  it('should update url', function(done){
+    assert.ok(location.pathname !== '/navigate.html')
+    app.navigate('/navigate.html', function(err){
+      assert.strictEqual(location.pathname, '/navigate.html')
+      done(err);
+    });
+  });
+
   it('should update content', function(done){
     assert.strictEqual(0, $('h1').length)
     app.navigate('/navigate.html', function(err){
@@ -1204,6 +1212,14 @@ describe('Navigation', function(){
       done(new Error('did not fail silently'));
     });
     app.navigate('/navigate.html', function(err){
+      done(err);
+    });
+  });
+
+  it.only('should work for 404 not found', function(done){
+    document.title = 'x';
+    app.navigate('/fake.html', function(err){
+      assert.ok(document.title !== 'x');
       done(err);
     });
   });

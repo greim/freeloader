@@ -1,5 +1,5 @@
 {
-  "name": "freeloader",
+  "name": "freeloader-js",
   "version": "0.0.1",
   "description": "Client side control",
   "main": "freeloader.js",
