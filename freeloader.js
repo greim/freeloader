@@ -159,6 +159,7 @@ module.exports = function(){
             callback.call(ctx, err);
           } else {
             history[opts.replace ? 'replace' : 'push'](opts.url);
+            app.scan();
             callback.call(ctx, null);
           }
         });

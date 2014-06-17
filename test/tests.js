@@ -1184,6 +1184,35 @@ describe('Navigation', function(){
     });
   });
 
+  it('should rescan', function(done){
+    assert.strictEqual(0, $('h1').length);
+    app.bind('h1', {
+      life: { init: 'init' },
+      init: function(){
+        done();
+      }
+    });
+    app.navigate('/navigate.html', function(err){
+      assert.strictEqual('Test 1', $('h1').text())
+      err && done(err);
+    });
+  });
+
+  it('should rescan before callback', function(done){
+    var result = ''
+    app.bind('h1', {
+      life: { init: 'init' },
+      init: function(){
+        result += 'a';
+      }
+    });
+    app.navigate('/navigate.html', function(err){
+      result += 'b';
+      assert.equal('ab', result);
+      done(err);
+    });
+  });
+
   it('should autofocus', function(done){
     app.navigate('/navigate.html', function(err){
       assert.strictEqual(document.activeElement, $('button').get(0))
@@ -1221,6 +1250,14 @@ describe('Navigation', function(){
     app.navigate('/fake.html', function(err){
       assert.ok(document.title !== 'x');
       done(err);
+    });
+  });
+
+  it.skip('should go back', function(done){
+    app.navigate('/navigate.html', function(err){
+      app.navigate('/fake.html', function(err){
+        history.back();
+      });
     });
   });
 });
