@@ -193,13 +193,6 @@ module.exports = function(){
       this.navigate({replace:true}, callback, ctx);
     },
 
-    back: function(callback, ctx){
-      this.one('back', function(err){
-        callback.call(ctx, err);
-      }, this);
-      window.history.back();
-    },
-
     scan: scan,
     _tag: tag,
     _tagClass: tagClass,
@@ -211,9 +204,10 @@ module.exports = function(){
   };
 
   history.onPop(function(url){
+    app.trigger('pop-start');
     loader.loadPage(url, function(err){
       app.scan();
-      app.trigger('back', err, url);
+      app.trigger('pop-done', err);
     });
   });
 

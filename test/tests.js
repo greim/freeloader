@@ -1254,13 +1254,14 @@ describe('Navigation', function(){
   });
 
   it('should go back', function(done){
+    app.on('pop-done', function(err){
+      assert.equal('title foo', document.title);
+      assert.equal('/navigate.html', location.pathname);
+      done(err);
+    });
     app.navigate('/navigate.html', function(err){
       app.navigate('/fake.html', function(err){
-        app.back(function(err){
-          assert.equal('title foo', document.title);
-          assert.equal('/navigate.html', location.pathname);
-          done();
-        });
+        history.back();
       });
     });
   });
@@ -1279,10 +1280,26 @@ describe('Navigation', function(){
       }
     });
     app.navigate('/navigate.html', function(err){
+      err && done(err)
       app.navigate('/fake.html', function(err){
-        app.back(function(err){
-        });
+        err && done(err)
+        history.back();
       });
+    });
+  });
+
+  it('should pop start and done', function(done){
+    var result = '';
+    app.on('pop-start', function(){
+      result += 'a';
+    });
+    app.on('pop-done', function(err){
+      result += 'b';
+      assert.equal('ab', result);
+      done(err);
+    });
+    app.navigate('/navigate.html', function(err){
+      history.back();
     });
   });
 });
