@@ -1177,30 +1177,30 @@ describe('Navigation', function(){
   });
 
   it('should update content', function(done){
-    assert.strictEqual(0, $('h1').length)
+    assert.strictEqual(0, $('h1.the-heading').length)
     app.navigate('/navigate.html', function(err){
-      assert.strictEqual('Test 1', $('h1').text())
+      assert.strictEqual('Test 1', $('h1.the-heading').text())
       done(err);
     });
   });
 
   it('should rescan', function(done){
-    assert.strictEqual(0, $('h1').length);
-    app.bind('h1', {
+    assert.strictEqual(0, $('h1.the-heading').length);
+    app.bind('h1.the-heading', {
       life: { init: 'init' },
       init: function(){
         done();
       }
     });
     app.navigate('/navigate.html', function(err){
-      assert.strictEqual('Test 1', $('h1').text())
+      assert.strictEqual('Test 1', $('h1.the-heading').text())
       err && done(err);
     });
   });
 
   it('should rescan before callback', function(done){
     var result = ''
-    app.bind('h1', {
+    app.bind('h1.the-heading', {
       life: { init: 'init' },
       init: function(){
         result += 'a';
@@ -1264,6 +1264,23 @@ describe('Navigation', function(){
       });
     });
   });
+
+  it('should rescan after back', function(done){
+    app.navigate('/navigate.html', function(err){
+      app.navigate('/fake.html', function(err){
+        app.back(function(err){
+          app.bind('h1.the-heading', {
+            life: { init: 'init' },
+            init: function(){
+              assert.equal('/navigate.html', location.pathname);
+              assert.equal('title foo', document.title);
+              done();
+            }
+          });
+        });
+      });
+    });
+  });
 });
 
 describe('Events', function(){
@@ -1303,14 +1320,24 @@ describe('Events', function(){
     app.trigger('foo', 0, false);
   });
 
-  it('should work multiple', function(done){
-    car called = 0;
+  it('should work multiple', function(){
+    var called = 0;
     app.on('foo', function(){
       called++;
     });
     app.trigger('foo');
     app.trigger('foo');
     assert.strictEqual(2, called)
+  });
+
+  it('off should work', function(){
+    var called = 0;
+    function inc(){called++}
+    app.on('foo', inc);
+    app.trigger('foo');
+    app.off('foo', inc);
+    app.trigger('foo');
+    assert.strictEqual(1, called)
   });
 
   it('one should work', function(done){
@@ -1348,8 +1375,8 @@ describe('Events', function(){
     app.trigger('foo', 0, false);
   });
 
-  it('one should not work multiple', function(done){
-    car called = 0;
+  it('one should not work multiple', function(){
+    var called = 0;
     app.one('foo', function(){
       called++;
     });

@@ -142,10 +142,11 @@ module.exports = function(){
     },
 
     one: function(eventName, cb, ctx){
-      this.on(eventName, function(){
-        this.off(eventName, cb);
+      var fn = function(){
+        app.off(eventName, fn);
         cb.apply(ctx, arguments);
-      }, this);
+      };
+      app.on(eventName, fn);
     },
 
     trigger: function(eventName){
@@ -193,7 +194,9 @@ module.exports = function(){
     },
 
     back: function(callback, ctx){
-      this.one('back', callback, ctx);
+      this.one('back', function(err){
+        callback.call(ctx, err);
+      }, this);
       window.history.back();
     },
 
