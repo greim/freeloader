@@ -1254,7 +1254,7 @@ describe('Navigation', function(){
   });
 
   it('should go back', function(done){
-    app.on('pop-done', function(err){
+    app.on('revisit-end', function(err){
       assert.equal('title foo', document.title);
       assert.equal('/navigate.html', location.pathname);
       done(err);
@@ -1288,18 +1288,27 @@ describe('Navigation', function(){
     });
   });
 
-  it('should pop start and done', function(done){
+  it('should revisit start and end', function(done){
     var result = '';
-    app.on('pop-start', function(){
+    app.on('revisit-start', function(){
       result += 'a';
     });
-    app.on('pop-done', function(err){
+    app.on('revisit-end', function(err){
       result += 'b';
       assert.equal('ab', result);
       done(err);
     });
     app.navigate('/navigate.html', function(err){
       history.back();
+    });
+  });
+
+  it('should not break on hash', function(done){
+    assert.strictEqual(0, $('h1.the-heading').length)
+    app.navigate('/navigate.html#foo', function(err){
+      assert.strictEqual('Test 1', $('h1.the-heading').text())
+      assert.strictEqual('/navigate.html#foo', location.pathname + location.search + location.hash)
+      done(err);
     });
   });
 });

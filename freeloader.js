@@ -203,11 +203,11 @@ module.exports = function(){
     }
   };
 
-  history.onPop(function(url){
-    app.trigger('pop-start');
-    loader.loadPage(url, function(err){
+  history.onRevisit(function(){
+    app.trigger('revisit-start');
+    loader.loadPage(history.url(), function(err){
       app.scan();
-      app.trigger('pop-done', err);
+      app.trigger('revisit-end', err);
     });
   });
 
