@@ -114,7 +114,7 @@ Here are the event names, along with how it's triggered.
 
 All reference-keeping work is offloaded to the browser via the DOM, so you don't need to worry about memory leaks or zombie handlers that often arise when naively tying lots of things together using events.
 No controller that isn't alive and awake in the document will ever receive an event, or be retained in memory after its DOM node is removed.
-Thus, `this.$el.remove()` or `$('#content').remove()` are perfectly acceptable ways of removing content.
+Thus, `this.$el.remove()` or `$('#content').remove()` or `document.getElementById('foo').innerHTML = ''` are perfectly acceptable ways of removing content, as far as freeloader is concerned.
 
 ## Content loading
 
