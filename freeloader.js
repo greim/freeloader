@@ -171,7 +171,9 @@ module.exports = function(){
         opts.url = history.url();
       }
       if (history.works()){
-        loader.loadPage(opts, function(err){
+        loader.loadPage(opts, function(oldBody, newBody){
+          app.trigger('body-change', oldBody, newBody);
+        }, function(err){
           if (err){
             callback.call(ctx, err);
           } else {
@@ -205,7 +207,9 @@ module.exports = function(){
 
   history.onRevisit(function(){
     app.trigger('revisit-start');
-    loader.loadPage(history.url(), function(err){
+    loader.loadPage(history.url(), function(oldBody, newBody){
+      app.trigger('bodychange', oldBody, newBody);
+    }, function(err){
       app.scan();
       app.trigger('revisit-end', err);
     });

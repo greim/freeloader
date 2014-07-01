@@ -1311,6 +1311,19 @@ describe('Navigation', function(){
       done(err);
     });
   });
+
+  it('should trigger body-change', function(done){
+    app.on('body-change', function(oldBody, newBody){
+      assert.equal(oldBody.nodeName.toLowerCase(), 'body')
+      assert.equal(newBody.nodeName.toLowerCase(), 'body')
+      assert.ok($.contains(document.documentElement, oldBody))
+      assert.ok(!$.contains(document.documentElement, newBody))
+      done()
+    });
+    app.navigate('/navigate.html', function(err){
+      if (err) done(err);
+    });
+  });
 });
 
 describe('Events', function(){
