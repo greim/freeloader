@@ -1324,6 +1324,21 @@ describe('Navigation', function(){
       if (err) done(err);
     });
   });
+
+  it('should navigate subselection', function(done){
+    var oldBod = document.body;
+    $('body').html('<h1>Goes Away</h1>');
+    assert.strictEqual('Goes Away', $('h1').text());
+    app.navigate({
+      url: '/navigate.html',
+      replace: 'h1'
+    }, function(err){
+      var newBod = document.body;
+      assert.strictEqual(oldBod, newBod);
+      assert.strictEqual('Test 1', $('h1').text());
+      done(err);
+    });
+  });
 });
 
 describe('Events', function(){
