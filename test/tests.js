@@ -1081,6 +1081,48 @@ describe('Controller injection', function(){
       });
     });
 
+    it('should provided fetched content', function(done){
+      $('body').append('<div id="test"></div>');
+      app.bind('#test', {
+        life: { mount: 'mount' },
+        mount: function(){
+          this.inject({
+            url: '/injectme.html',
+            into: true
+          }, function(err, $content){
+            try{
+              assert.ok(1, $content.is('.injected'));
+              assert.strictEqual(1, $content.find('span').length);
+              done(err)
+            } catch(ex) {
+              done(ex);
+            }
+          }, this)
+        }
+      });
+    });
+
+    it('should provided all fetched content', function(done){
+      $('body').append('<div id="test"></div>');
+      app.bind('#test', {
+        life: { mount: 'mount' },
+        mount: function(){
+          this.inject({
+            url: '/injectme.html span',
+            into: true
+          }, function(err, $content){
+            try{
+              assert.ok(1, $content.is('.injected'));
+              assert.strictEqual(1, $content.find('span').length);
+              done(err)
+            } catch(ex) {
+              done(ex);
+            }
+          }, this)
+        }
+      });
+    });
+
     it('should inject from url and selector', function(done){
       $('body').append('<div id="test"></div>');
       app.bind('#test', {
