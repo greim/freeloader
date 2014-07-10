@@ -1074,14 +1074,18 @@ describe('Controller injection', function(){
             url: '/injectme.html',
             into: true
           }, function(err){
-            assert.strictEqual(1, this.$('.injected').length);
-            done(err)
+            try {
+              assert.strictEqual(1, this.$('.injected').length);
+              done(err)
+            } catch(ex) {
+              done(ex);
+            }
           }, this)
         }
       });
     });
 
-    it('should provided fetched content', function(done){
+    it('should provided remainder content', function(done){
       $('body').append('<div id="test"></div>');
       app.bind('#test', {
         life: { mount: 'mount' },
@@ -1091,7 +1095,7 @@ describe('Controller injection', function(){
             into: true
           }, function(err, $content){
             try{
-              assert.ok(1, $content.is('.injected'));
+              assert.ok($content.is('.injected'));
               assert.strictEqual(1, $content.find('span').length);
               done(err)
             } catch(ex) {
@@ -1102,7 +1106,7 @@ describe('Controller injection', function(){
       });
     });
 
-    it('should provided all fetched content', function(done){
+    it('should provided all remainder content', function(done){
       $('body').append('<div id="test"></div>');
       app.bind('#test', {
         life: { mount: 'mount' },
@@ -1112,8 +1116,7 @@ describe('Controller injection', function(){
             into: true
           }, function(err, $content){
             try{
-              assert.ok(1, $content.is('.injected'));
-              assert.strictEqual(1, $content.find('span').length);
+              assert.ok($content.is('.injected'), 'content should be .injected');
               done(err)
             } catch(ex) {
               done(ex);
@@ -1128,12 +1131,17 @@ describe('Controller injection', function(){
       app.bind('#test', {
         life: { mount: 'mount' },
         mount: function(){
+          assert.strictEqual('', this.$el.html());
           this.inject({
             url: '/injectme.html span',
             into: true
           }, function(err){
-            assert.strictEqual(1, this.$('span').length);
-            done(err)
+            try {
+              assert.strictEqual('<span></span>', this.$el.html());
+              done(err)
+            } catch(ex) {
+              done(ex);
+            }
           }, this)
         }
       });

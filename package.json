@@ -1,6 +1,6 @@
 {
   "name": "freeloader-js",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Client side control",
   "main": "freeloader.js",
   "directories": {
