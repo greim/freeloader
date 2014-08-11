@@ -205,7 +205,7 @@ module.exports = function(){
     }
   };
 
-  history.onRevisit(function(){
+  history.on('revisit', function(){
     app.trigger('revisit-start');
     loader.loadPage(history.url(), function(oldBody, newBody){
       app.trigger('bodychange', oldBody, newBody);
