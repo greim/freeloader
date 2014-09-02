@@ -3,6 +3,7 @@ var $ = require('jquery');
 var assert = require('assert')
 
 var app = freeloader();
+app.startHistory();
 
 afterEach(function(){
   app._reset();

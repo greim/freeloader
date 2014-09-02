@@ -125,7 +125,10 @@ Freeloader provides two primary ways to add new content to the DOM.
 
 ### Navigation
 
+To use navigation, call `app.startHistory()`.
+
 ```javascript
+app.startHistory();
 app.navigate('/foo?bar=baz', function(err){
   if (err) { ...the connection died... }
   else { ...the request was 200, 404, 500, etc... }

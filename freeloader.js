@@ -9,7 +9,7 @@ var $ = require('jquery');
 var await = require('await');
 var Controller = require('./lib/controller');
 var parser = require('./lib/document-parser');
-var history = require('./lib/history');
+var History = require('./lib/history');
 var loader = require('./lib/fast-loader');
 var byClass = require('./lib/fast-classer');
 
@@ -41,7 +41,8 @@ var makeClassForSubs = (function(){
 
 module.exports = function(){
 
-  var bindings = [];
+  var bindings = [],
+    history = new History();
 
   function scan(root){
     root = root || docEl;
@@ -193,6 +194,10 @@ module.exports = function(){
 
     reload: function(callback, ctx){
       this.navigate({replace:true}, callback, ctx);
+    },
+
+    startHistory: function(){
+      history.start();
     },
 
     scan: scan,

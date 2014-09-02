@@ -1,0 +1,5 @@
+Reasons for this approach:
+
+1. Allows deep-linking into the app using URLs that are the same for all browsers. No confusion about how to handle query strings; they're the domain of the server.
+2. Client-side routing avoids whole-page rebuilds for every little change in the app, which aligns nicely with the intent of the URL hash.
+3. Server-side routing removes need for all HTML to be rendered on client, and helps break apart what would otherwise be one monolithic SPA into a set of smaller SPAs. In other words, each path /foo/bar is its own self-contained app.
